@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body{
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to your Shopping Cart!</h1>
+
+    <form action="/logout" method="POST"><button type="submit">Logout</button></form>
+
+    <br>
+
+    <button id="fetchData">FETCH DATA</button>
+    <ol id="data">
+
+    </ol>
+
+    <script>
+        document.getElementById("fetchData").addEventListener("click", fetchData)
+
+        async function fetchData(){
+            let promise = await fetch("http://localhost:5000/data")
+
+            if(promise.ok){
+                console.log("Data fetching function is okay!")
+                let json = await promise.json()
+                console.log(json)
+                /* let dataList = document.querySelector("#data")
+                dataList.innerHTML = json.shoppingCart.items.
+                                        map(item => `<li id="list-${item}">${item}</li>`).join("") */
+            }else{
+                alert(`HTTP Error: ${promise.status}`)
+            }
+            
+        }
+    </script>
+</body>
+</html>

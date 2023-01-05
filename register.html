@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration</title>
+    <style>
+        #signup{
+            display:flex;
+            flex-direction: column;
+            width: 25%;
+        }
+
+        #matchPass{
+            background-Color: red;
+            text-align: center;
+        }
+
+        button{
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<form id="signup" action="/register" method="POST">  
+  
+<label for="username">Username:</label>         
+<input type="text" id="username" name="username" size="15"/> 
+Password:  
+<span><input type="Password" id="pass" name="password" required><div></div></span>
+Re-type password:  
+<span><input type="Password" id="repass" name="repass" required><div id="matchPass"></div></span>
+<button>Submit</button>
+
+</form>  
+
+
+<script>
+document.querySelector("#signup").addEventListener("submit", handleSubmit)
+document.querySelector("#repass").addEventListener("keyup", checkPassMatch)
+
+function checkPassMatch(e){
+    let p1 = document.querySelectorAll(`input[type="password"]`)
+    if(p1[0].value === p1[1].value){
+        document.getElementById("matchPass").innerText = ""
+        document.querySelector("button").style.visibility = "visible"
+    }else{
+        let alert = document.getElementById("matchPass")
+        alert.innerText = "Passwords Do not Match!"
+        document.querySelector("button").style.visibility = "hidden"
+    }
+}
+
+function handleSubmit(e){
+    let p1 = document.querySelectorAll(`input[type="password"]`)
+    if(p1[0].value === p1[1].value){
+        console.log("SAME PASSWORDS!")
+    }else{
+        console.log("NOT SAME PASSWORDS")
+        e.preventDefault()
+    }
+}
+
+</script>
+</body>
+</html>
