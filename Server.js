@@ -21,6 +21,7 @@ const loadFile = async (fileName) => {
 
 let sessions 
 let userCredentials
+let allShoppingCarts
 async function loadSessions(){
     sessions = await loadFile('sessions.json') || {}
     console.log(sessions)
@@ -29,25 +30,19 @@ async function loadCreds(){
     userCredentials = await loadFile('userCredentials.json') || []
     console.log(userCredentials)
 }
-
-// dummy data
-let allShoppingCarts = [
-    {user: "admin", shoppingCart: [
-        {id: 1, name: "potato", qty: 15, pricePerItem: 0.50},
-        {id: 2, name: "bacon", qty: 5, pricePerItem: 7.99}
-    ]},
-    {user: "joe", shoppingCart: [
-        {id: 1, name: "pistachio", qty: 23, pricePerItem: 25.0},
-        {id: 2, name: "rabbits", qty: 5, pricePerItem: 15.99}
-    ]}
-]
+async function loadAllShoppingCarts(){
+    allShoppingCarts = await loadFile('shoppingCarts.json') || {}
+    console.log(allShoppingCarts)
+}
 
 app.get("/", (req, res) => {
     const userSession = userIsLoggedIn(req.headers.cookie)
     if(userSession === undefined || !userSession){
         const sessionId = uuidv4();
         sessions[sessionId] = {type: "anonymous-User"}
+        allShoppingCarts[sessionId] = {type: "anonymous-User", shoppingCart: []}
         saveSessions()
+        saveShoppingCarts()
         res.set('Set-Cookie', `session=${sessionId}`)
     }
     return res.sendFile('/logged-in.html', {root: __dirname})
@@ -97,9 +92,9 @@ app.get("/data", (req, res) => {
         return res.send(`<h1>Error 404, page not found</h1>`)
     }
     else{
-        let userCart = allShoppingCarts.find((cart) => cart.user === userSession.username)
-        res.status(200)
-        return res.send(userCart ||{error: "No shopping cart found" } )
+/*         let userCart = allShoppingCarts.find((cart) => cart.user === userSession.username)
+        res.status(200) */
+        return res.send({error: "No shopping cart found" })
     }
 })
 
@@ -226,6 +221,10 @@ function saveSessions(){
     saveDataAsJSON('sessions.json', sessions)
 }
 
+function saveShoppingCarts(){
+    saveDataAsJSON('shoppingCarts.json', allShoppingCarts)
+}
+
 async function saveDataAsJSON(fileName, sourceVariable){
     fs.writeFile(fileName, JSON.stringify(sourceVariable), (err)=>{
         if (err) {
@@ -238,3 +237,4 @@ async function saveDataAsJSON(fileName, sourceVariable){
 app.listen(5000, console.log("Running on port 5000"))
 loadCreds()
 loadSessions()
+loadAllShoppingCarts()
