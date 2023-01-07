@@ -45,12 +45,12 @@ let allShoppingCarts = [
 app.get("/", (req, res) => {
     const userSession = userIsLoggedIn(req.headers.cookie)
     if(userSession === undefined || !userSession){
-        res.redirect("/login")
+        const sessionId = uuidv4();
+        sessions[sessionId] = {type: "anonymous-User"}
+        saveSessions()
+        res.set('Set-Cookie', `session=${sessionId}`)
     }
-    else{
-        return res.sendFile('/logged-in.html', {root: __dirname})
-    }
-        
+    return res.sendFile('/logged-in.html', {root: __dirname})
 })
 
 app.get("/login", (req, res) => {
