@@ -1,4 +1,82 @@
-const dummyProductDB = [ {}, {}]
+const dummyProductDB = [{
+id: 1,
+name: "one",
+manufacturerOrBrand: "T-Shirt-CO",
+size: 5,
+ageCategory: "5-10",
+sexCategory: "M",
+typeOfClothing: "T-Shirt",
+colorOptions: ["red", "green", "orange", "pink"],
+imagePreviewURL: "a",
+variationIsInStock: [{color: "red", amountInStock: 10}, {color: "green", amountInStock: 3}, {color: "orange", amountInStock: 0}, {color:"pink", amountInStock:2}],
+weight: {grams: 50},
+dimensions: "LxWxH",
+price: 5.99,
+materials: {polyester: "50%", cotton: "50%"},
+amount: 1,
+totalCost: 5.99,
+},
+{
+    id: 2,
+    name: "two",
+    manufacturerOrBrand: "T-Shirt-CO",
+    size: 5,
+    ageCategory: "10-15",
+    sexCategory: "F",
+    typeOfClothing: "T-Shirt",
+    colorOptions: ["red", "green", "orange", "pink"],
+    imagePreviewURL: "a",
+    variationIsInStock: [{color: "red", amountInStock: 2}, {color: "green", amountInStock: 3}, {color: "orange", amountInStock: 4}, {color:"pink", amountInStock: 5}],
+    weight: {grams: 49},
+    dimensions: "LxWxH",
+    price: 5.99,
+    materials: {polyester: "50%", cotton: "50%"},
+    amount: 1,
+    totalCost: 5.99,
+    }
+]
+
+const dummyProduct = {
+    id: 1,
+    name: "one",
+    manufacturerOrBrand: "T-Shirt-CO",
+    size: 5,
+    ageCategory: "5-10",
+    sexCategory: "M",
+    typeOfClothing: "T-Shirt",
+    colorOptions: ["red", "green", "orange", "pink"],
+    imagePreviewURL: "a",
+    variationIsInStock: [{color: "red", amountInStock: 10}, {color: "green", amountInStock: 3}, {color: "orange", amountInStock: 0}, {color:"pink", amountInStock:2}],
+    weight: {grams: 50},
+    dimensions: "LxWxH",
+    price: 5.99,
+    materials: {polyester: "50%", cotton: "50%"},
+    amount: 1,
+    totalCost: 5.99,
+    }
+
+const dummyProduct2 = {
+    id: 2,
+    name: "two",
+    manufacturerOrBrand: "T-Shirt-CO",
+    size: 5,
+    ageCategory: "10-15",
+    sexCategory: "F",
+    typeOfClothing: "T-Shirt",
+    colorOptions: ["red", "green", "orange", "pink"],
+    imagePreviewURL: "a",
+    variationIsInStock: [{color: "red", amountInStock: 2}, {color: "green", amountInStock: 3}, {color: "orange", amountInStock: 4}, {color:"pink", amountInStock: 5}],
+    weight: {grams: 49},
+    dimensions: "LxWxH",
+    price: 5.99,
+    materials: {polyester: "50%", cotton: "50%"},
+    amount: 1,
+    totalCost: 5.99,
+    }
+
+const cart = []
+
+const shoppingCartDB = []
 
 /*
 let product = {
@@ -39,27 +117,56 @@ function addToCart(shoppingCart, product){
 }
 
 function removeFromCart(shoppingCart, productID){
-    shoppingCart.splice(
-        shoppingCart.findIndex((item)=>{
-        item.id === productID
-        })
-    , 1)
+    let index = shoppingCart.findIndex((item)=> item.id === productID)
+    if(index === -1){
+        console.error(`Could not find productID: ${productID}`)
+        return
+    }
+    shoppingCart.splice(index, 1)
 }
 
 function editAmountInCart(shoppingCart, productID, newAmount){
-    shoppingCart.find((item) => {
-        item.id === productID
-    }).amount = newAmount
+    let index = shoppingCart.findIndex((item)=> item.id === productID)
+    if(index === -1){
+        console.error(`Could not find productID: ${productID}`)
+        return
+    }
+    shoppingCart[index].amount = newAmount
 }
 
 function clearCart(shoppingCart){
-    shoppingCart = []
+    shoppingCart.splice(0)
 }
 
-function saveCart(shoppingCart, cookie){
+/* function saveCart(shoppingCart, cookie){
     let statusOfSave = pushToDatabase(shoppingCart, cookie)
     if(statusOfSave === undefined){
         console.error("Unable to save shopping cart")
         return
     }
 }
+
+function pushToDatabase(shoppingCart, cookie){
+    shoppingCart.find((item) => {
+        item.coo === productID
+    })
+} */
+
+function main(){
+    addToCart(cart, dummyProduct)
+    addToCart(cart, dummyProduct)
+    addToCart(cart, dummyProduct)
+    addToCart(cart, dummyProduct)
+    addToCart(cart, dummyProduct)
+    addToCart(cart, dummyProduct)
+    addToCart(cart, dummyProduct)
+    addToCart(cart, dummyProduct2)
+    addToCart(cart, dummyProduct2)
+    addToCart(cart, dummyProduct2)
+    addToCart(cart, dummyProduct2)
+    console.log(cart)
+    console.log("--------------------------------------------------")
+    clearCart(cart)
+    console.log(cart)
+}
+main();
