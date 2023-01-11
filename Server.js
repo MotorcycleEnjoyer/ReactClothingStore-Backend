@@ -4,6 +4,7 @@ const uuidv4 = require('uuid').v4
 const bcrypt = require('bcrypt')
 const saltRounds = 12
 const fs = require('fs')
+const { all } = require('express/lib/application')
 
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
@@ -86,15 +87,24 @@ app.get('/todos',(req, res) => {
 })
 
 app.get("/data", (req, res) => {
-    const userSession = userIsLoggedIn(req.headers.cookie)
+/*     const userSession = userIsLoggedIn(req.headers.cookie)
     if(userSession === undefined || !userSession){
         res.status(404)
         return res.send(`<h1>Error 404, page not found</h1>`)
     }
     else{
-/*         let userCart = allShoppingCarts.find((cart) => cart.user === userSession.username)
-        res.status(200) */
+        //let userCart = allShoppingCarts.find((cart) => cart.user === userSession.username)
+        // res.status(200)
         return res.send({error: "No shopping cart found" })
+    } */
+    let rawCookie = req.headers.cookie
+    if(rawCookie === undefined || !rawCookie)
+    {
+        res.status(404)
+        return res.send(`<h1>Error 404, page not found</h1>`)
+    }else{
+        let sessionId = rawCookie.split('=')[1]
+        return res.send(fetchUserShoppingCart(sessionId))
     }
 })
 
@@ -211,6 +221,12 @@ function userIsLoggedIn(cookie){
         return undefined
     }
     return userSession
+}
+
+function fetchUserShoppingCart(cookie){
+    console.log(`Cookie: ${cookie}`)
+    console.log(allShoppingCarts[cookie])
+    return allShoppingCarts[cookie]
 }
 
 function saveUserCredentials(){
