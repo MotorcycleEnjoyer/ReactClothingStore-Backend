@@ -4,7 +4,7 @@ const uuidv4 = require('uuid').v4
 const bcrypt = require('bcrypt')
 const saltRounds = 12
 const fs = require('fs')
-const { all } = require('express/lib/application')
+const shoppingCartFunctions = require('./Shopping')
 
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
@@ -222,6 +222,18 @@ function userIsLoggedIn(cookie){
     }
     return userSession
 }
+/* 
+    let myCart = allShoppingCarts[sessionId].shoppingCart
+    let product = header.product.dummyProduct
+    let pushPassed = ShoppingCartFunctions.addToCart(myCart, product)
+
+    if(pushPassed)
+    {
+
+    }
+
+    else
+*/
 
 function fetchUserShoppingCart(cookie){
     console.log(`Cookie: ${cookie}`)

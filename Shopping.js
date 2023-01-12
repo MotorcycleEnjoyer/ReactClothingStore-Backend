@@ -111,9 +111,10 @@ let cartObject = {
 
 function addToCart(shoppingCart, product){
     if(!product || product === undefined){
-        return
+        return false
     }
     shoppingCart.push(product)
+    return true
 }
 
 function removeFromCart(shoppingCart, productID){
@@ -152,21 +153,4 @@ function pushToDatabase(shoppingCart, cookie){
     })
 } */
 
-function main(){
-    addToCart(cart, dummyProduct)
-    addToCart(cart, dummyProduct)
-    addToCart(cart, dummyProduct)
-    addToCart(cart, dummyProduct)
-    addToCart(cart, dummyProduct)
-    addToCart(cart, dummyProduct)
-    addToCart(cart, dummyProduct)
-    addToCart(cart, dummyProduct2)
-    addToCart(cart, dummyProduct2)
-    addToCart(cart, dummyProduct2)
-    addToCart(cart, dummyProduct2)
-    console.log(cart)
-    console.log("--------------------------------------------------")
-    clearCart(cart)
-    console.log(cart)
-}
-main();
+module.exports = {dummyProduct}
