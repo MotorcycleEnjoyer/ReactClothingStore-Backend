@@ -52,7 +52,6 @@ const dummyProduct = {
     price: 5.99,
     materials: {polyester: "50%", cotton: "50%"},
     amount: 1,
-    totalCost: 5.99,
     }
 
 const dummyProduct2 = {
@@ -71,7 +70,6 @@ const dummyProduct2 = {
     price: 5.99,
     materials: {polyester: "50%", cotton: "50%"},
     amount: 1,
-    totalCost: 5.99,
     }
 
 const cart = []

@@ -18,13 +18,52 @@
 
     <br>
 
+    <button id="postData">POST DUMMY DATA TO SERVER</buttonj>
     <button id="fetchData">FETCH DATA</button>
     <ol id="data">
 
     </ol>
 
     <script>
+        let dummyProduct = {
+                id: 420,
+                name: "fourTwenty",
+                manufacturerOrBrand: "T-Shirt-CO",
+                size: 5,
+                ageCategory: "10-15",
+                sexCategory: "M",
+                typeOfClothing: "Sweater",
+                colorOptions: ["red", "green", "orange", "pink"],
+                imagePreviewURL: "a",
+                variationIsInStock: [{color: "red", amountInStock: 10}, {color: "green", amountInStock: 3}, {color: "orange", amountInStock: 0}, {color:"pink", amountInStock:2}],
+                weight: {grams: 150},
+                dimensions: "LxWxH",
+                price: 15.99,
+                materials: {polyester: "5%", cotton: "95%"},
+                amount: 1,
+        }
+        let params = {
+            product: dummyProduct,
+        }
+
         document.getElementById("fetchData").addEventListener("click", fetchData)
+        document.getElementById("postData").addEventListener("click", sendData)
+
+        async function sendData(){
+            const options = {
+                method: 'POST',
+                // Failure to specify header = GG
+                headers: { "content-type": "application/json"},
+                body: JSON.stringify(params), 
+            }
+            let promise = await fetch( 'http://localhost:5000/cart', options )
+
+            if(promise.ok){
+                console.log("DATA POST IS OK")
+                let json = await promise.json()
+                console.log(json)
+            }
+        }
 
         async function fetchData(){
             let promise = await fetch("http://localhost:5000/data")

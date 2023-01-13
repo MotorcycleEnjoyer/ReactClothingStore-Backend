@@ -6,8 +6,9 @@ const saltRounds = 12
 const fs = require('fs')
 const shoppingCartFunctions = require('./Shopping')
 
-app.use(express.json())
 app.use(express.urlencoded({extended: true}))
+app.use(express.json())
+
 
 const loadFile = async (fileName) => {
     try{
@@ -25,15 +26,15 @@ let userCredentials
 let allShoppingCarts
 async function loadSessions(){
     sessions = await loadFile('sessions.json') || {}
-    console.log(sessions)
+//    console.log(sessions)
 }
 async function loadCreds(){
     userCredentials = await loadFile('userCredentials.json') || []
-    console.log(userCredentials)
+//    console.log(userCredentials)
 }
 async function loadAllShoppingCarts(){
     allShoppingCarts = await loadFile('shoppingCarts.json') || {}
-    console.log(allShoppingCarts)
+//    console.log(allShoppingCarts)
 }
 
 app.get("/", (req, res) => {
@@ -195,9 +196,8 @@ app.post('/cart', (req, res) => {
         res.send(`<h1>Error 404, page not found</h1>`)
     }
 
-
     let myCart = allShoppingCarts[sessionId].shoppingCart
-    let product = shoppingCartFunctions.dummyProduct2
+    let product = req.body.product
     shoppingCartFunctions.addToCart(myCart, product)
     console.log(myCart)
     return res.send(fetchUserShoppingCart(sessionId))
@@ -245,8 +245,8 @@ function userIsLoggedIn(cookie){
 }
 
 function fetchUserShoppingCart(cookie){
-    console.log(`Cookie: ${cookie}`)
-    console.log(allShoppingCarts[cookie])
+//    console.log(`Cookie: ${cookie}`)
+//    console.log(allShoppingCarts[cookie])
     return allShoppingCarts[cookie]
 }
 
