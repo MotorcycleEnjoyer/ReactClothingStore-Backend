@@ -153,4 +153,4 @@ function pushToDatabase(shoppingCart, cookie){
     })
 } */
 
-module.exports = {dummyProduct}
+module.exports = {dummyProduct, dummyProduct2, addToCart}

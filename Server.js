@@ -41,7 +41,7 @@ app.get("/", (req, res) => {
     if(userSession === undefined || !userSession){
         const sessionId = uuidv4();
         sessions[sessionId] = {type: "anonymous-User"}
-        allShoppingCarts[sessionId] = {type: "anonymous-User", shoppingCart: []}
+        allShoppingCarts[sessionId] = {type: "anonymous-User", shoppingCart: [shoppingCartFunctions.dummyProduct]}
         saveSessions()
         saveShoppingCarts()
         res.set('Set-Cookie', `session=${sessionId}`)
@@ -182,6 +182,27 @@ app.post("/register", (req,res) => {
     });
 })
 
+app.post('/cart', (req, res) => {
+    const cookie = req.headers.cookie
+    if(cookie === undefined){
+        res.status(404)
+        res.send(`<h1>Error 404, page not found</h1>`)
+    }
+    
+    const sessionId = cookie.split('=')[1]
+    if(sessionId === undefined){
+        res.status(404)
+        res.send(`<h1>Error 404, page not found</h1>`)
+    }
+
+
+    let myCart = allShoppingCarts[sessionId].shoppingCart
+    let product = shoppingCartFunctions.dummyProduct2
+    shoppingCartFunctions.addToCart(myCart, product)
+    console.log(myCart)
+    return res.send(fetchUserShoppingCart(sessionId))
+})
+
 app.post('/logout', (req,res) => {
     const cookie = req.headers.cookie
     if(cookie === undefined){
@@ -222,18 +243,6 @@ function userIsLoggedIn(cookie){
     }
     return userSession
 }
-/* 
-    let myCart = allShoppingCarts[sessionId].shoppingCart
-    let product = header.product.dummyProduct
-    let pushPassed = ShoppingCartFunctions.addToCart(myCart, product)
-
-    if(pushPassed)
-    {
-
-    }
-
-    else
-*/
 
 function fetchUserShoppingCart(cookie){
     console.log(`Cookie: ${cookie}`)
