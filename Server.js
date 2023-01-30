@@ -5,10 +5,87 @@ const bcrypt = require('bcrypt')
 const saltRounds = 12
 const fs = require('fs')
 const shoppingCartFunctions = require('./Shopping')
+const cors = require("cors")
+const dummyProductDB = require('./dummyProductDB')
 
+const dummyData = dummyProductDB.userData.cart
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  credentials: true
+};
+app.use(cors(corsOptions));
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
+const suggestionDB = require("./Suggestions")
+const url = require('url')
+
+app.post('/suggestions', function(req,res){
+    console.log("SUGGESTIONS REQUEST")
+    let phrase = req.body.searchTerm
+    let regex
+    try{
+        regex = new RegExp(phrase, 'gi');
+    }catch(e){
+        console.error(e)
+    }
+
+    let searchSuggestions = suggestionDB.filter(item => {
+        return item.match(regex)
+    })
+    res.send(searchSuggestions)
+})
+
+app.post('/addToCart', function(req,res){
+    const cookie = req.headers.cookie
+    if(cookie === undefined){
+        res.status(404)
+        res.send(`<h1>Error 404, page not found</h1>`)
+    }
+    
+    const sessionId = cookie.split("=")[1]
+    if(sessionId === undefined){
+        res.status(404)
+        res.send(`<h1>Error 404, page not found</h1>`)
+    }
+
+    let myCart = allShoppingCarts[sessionId].shoppingCart
+
+    let userSubmittedOptions = req.body.data
+    let productID = req.body.productId
+    let tempObject = dummyData.filter((item) => item.id === productID)[0]
+    tempObject = {...tempObject, ...userSubmittedOptions}
+    shoppingCartFunctions.addToCart(myCart, tempObject)
+    res.send("ok")
+})
+
+app.get('/s', function(req,res){
+    let urlObject = url.parse(req.url)
+    let rawQuery = urlObject.query.split("=")[1]
+    let properQuery = rawQuery.split("+").join(" ")
+    let searchResults = getProductFromProductDatabase(properQuery)
+    res.send(searchResults)
+})
+
+app.get('/p/*/id/*', function(req,res){
+    let urlObject = url.parse(req.url)
+    let productID = parseInt(urlObject.href.split("id/")[1])
+    let searchResults = dummyData.filter((item) => item.id === productID)
+    res.send(searchResults)
+})
+
+function getProductFromProductDatabase(productName){
+    let regex
+    try{
+        regex = new RegExp(productName, 'gi');
+    }catch(e){
+        console.error(e)
+    }
+
+    return dummyData.filter(item => {
+        return item.name.match(regex)
+    })
+}
 
 const loadFile = async (fileName) => {
     try{
@@ -37,7 +114,7 @@ async function loadAllShoppingCarts(){
 //    console.log(allShoppingCarts)
 }
 
-app.get("/", (req, res) => {
+app.get("/shoppingCart", (req, res) => {
     const userSession = userIsLoggedIn(req.headers.cookie)
     if(userSession === undefined || !userSession){
         const sessionId = uuidv4();
@@ -46,8 +123,12 @@ app.get("/", (req, res) => {
         saveSessions()
         saveShoppingCarts()
         res.set('Set-Cookie', `session=${sessionId}`)
+        res.send(fetchUserShoppingCart(sessionId))
+    }else{
+        console.log(req.headers.cookie)
+        res.send(fetchUserShoppingCart(req.headers.cookie.split("=")[1]))
     }
-    return res.sendFile('/logged-in.html', {root: __dirname})
+    // return res.sendFile('/logged-in.html', {root: __dirname})
 })
 
 app.get("/login", (req, res) => {
@@ -88,16 +169,6 @@ app.get('/todos',(req, res) => {
 })
 
 app.get("/data", (req, res) => {
-/*     const userSession = userIsLoggedIn(req.headers.cookie)
-    if(userSession === undefined || !userSession){
-        res.status(404)
-        return res.send(`<h1>Error 404, page not found</h1>`)
-    }
-    else{
-        //let userCart = allShoppingCarts.find((cart) => cart.user === userSession.username)
-        // res.status(200)
-        return res.send({error: "No shopping cart found" })
-    } */
     let rawCookie = req.headers.cookie
     if(rawCookie === undefined || !rawCookie)
     {
@@ -126,9 +197,6 @@ app.post('/login', (req, res) => {
         if(result){    
             let arr = Object.keys(sessions)
             let isAlreadyLoggedIn = false
-           /*  console.log("KEYS ARRAY:")
-            console.log(arr)
-            console.log("KEYS END!!!") */
             arr.forEach((item) => {
                 console.log(`${sessions[item].username}`)
                 if(sessions[item].username === (username)){
@@ -219,13 +287,8 @@ app.post('/logout', (req,res) => {
         saveSessions()
         res.set('Set-Cookie', 'session=; expires=Thu, 01 Jan 1970 00:00:00 GMT') 
         res.redirect("/")
-/* 
-    console.log(sessions)
-    delete userSession
-    console.log(sessions)
-    res.set('Set-Cookie', 'session=; expires=Thu, 01 Jan 1970 00:00:00 GMT') 
-    res.redirect("/") */
 })
+
 
 // 404 handler
 app.get("*", (req, res) =>{
@@ -239,6 +302,7 @@ function userIsLoggedIn(cookie){
     let sessionId = cookie.split('=')[1]
     let userSession = sessions[sessionId]
     if(!userSession){
+        console.log("USER SESSION NOT FOUND")
         return undefined
     }
     return userSession
