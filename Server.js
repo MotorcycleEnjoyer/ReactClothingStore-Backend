@@ -186,7 +186,8 @@ app.post('/login', (req, res) => {
     const storedCreds = userCredentials.find((item) => item.user === username )
     if(storedCreds === undefined){
         console.log("bad creds")
-        return res.sendFile('/login-try-again.html', {root: __dirname})
+        res.status(200)
+        return res.send("Incorrect credentials. Please try again")
     }
     
     bcrypt.compare(password, storedCreds.pass, (err, result) => {
@@ -246,7 +247,8 @@ app.post("/register", (req,res) => {
             saveUserCredentials()
             saveSessions()
             res.set('Set-Cookie', `session=${sessionId}`)
-            res.redirect('/')
+            res.status(200)
+            res.send("Registered Successfully!")
         })
     });
 })
