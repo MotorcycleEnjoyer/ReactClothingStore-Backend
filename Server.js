@@ -4,6 +4,7 @@ const uuidv4 = require('uuid').v4
 const bcrypt = require('bcrypt')
 const saltRounds = 12
 const fs = require('fs')
+const url = require('url')
 const shoppingCartFunctions = require('./Shopping')
 const cors = require("cors")
 const helper = require("./helper")
@@ -16,8 +17,56 @@ app.use(cors(corsOptions));
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
-const url = require('url')
+const loadFile = async (fileName) => {
+    try{
+        const data = await fs.promises.readFile(fileName, "utf-8")
+        let temp = JSON.parse(data) || undefined
+        return temp
+    } catch (error){
+        console.error(error)
+        return undefined
+    }
+}
 
+let sessions, userCredentials, allShoppingCarts
+async function loadSessions(){
+    sessions = await loadFile('sessions.json') || {}
+}
+async function loadCreds(){
+    userCredentials = await loadFile('userCredentials.json') || []
+}
+async function loadAllShoppingCarts(){
+    allShoppingCarts = await loadFile('shoppingCarts.json') || {}
+}
+
+app.get("/shoppingCart", (req, res) => {
+    const userSession = userIsLoggedIn(req.headers.cookie)
+    if(userSession === undefined || !userSession){
+        const temporaryUserId = uuidv4();
+        sessions[temporaryUserId] = {type: "anonymous-User"}
+        allShoppingCarts[temporaryUserId] = {type: "anonymous-User", shoppingCart: [shoppingCartFunctions.dummyProduct]}
+        saveSessions()
+        saveShoppingCarts()
+        res.set('Set-Cookie', `session=${temporaryUserId}`)
+        res.send(fetchAnonymousShoppingCart(temporaryUserId))
+    }
+    res.send(fetchAnonymousShoppingCart(req.headers.cookie.split("=")[1]))
+})
+
+app.get('/s', function(req,res){
+    let urlObject = url.parse(req.url)
+    let rawQuery = urlObject.query.split("=")[1]
+    let properQuery = rawQuery.split("+").join(" ")
+    let searchResults = helper.getProductFromProductDatabase(properQuery)
+    res.send(searchResults)
+})
+
+app.get('/p/*/id/*', function(req,res){
+    let urlObject = url.parse(req.url)
+    let productID = parseInt(urlObject.href.split("id/")[1])
+    let searchResults = helper.getProductFromProductDatabase("NoName", productID)
+    res.send(searchResults)
+})
 
 app.post('/suggestions', function(req,res){
     let phrase = req.body.searchTerm
@@ -39,63 +88,7 @@ app.post('/addToCart', function(req,res){
     res.send("ok")
 })
 
-app.get('/s', function(req,res){
-    let urlObject = url.parse(req.url)
-    let rawQuery = urlObject.query.split("=")[1]
-    let properQuery = rawQuery.split("+").join(" ")
-    let searchResults = helper.getProductFromProductDatabase(properQuery)
-    res.send(searchResults)
-})
-
-app.get('/p/*/id/*', function(req,res){
-    let urlObject = url.parse(req.url)
-    let productID = parseInt(urlObject.href.split("id/")[1])
-    let searchResults = helper.getProductFromProductDatabase("NoName", productID)
-    res.send(searchResults)
-})
-
-const loadFile = async (fileName) => {
-    try{
-        const data = await fs.promises.readFile(fileName, "utf-8")
-        let temp = JSON.parse(data) || undefined
-        return temp
-    } catch (error){
-        console.error(error)
-        return undefined
-    }
-}
-
-let sessions 
-let userCredentials
-let allShoppingCarts
-async function loadSessions(){
-    sessions = await loadFile('sessions.json') || {}
-}
-async function loadCreds(){
-    userCredentials = await loadFile('userCredentials.json') || []
-}
-async function loadAllShoppingCarts(){
-    allShoppingCarts = await loadFile('shoppingCarts.json') || {}
-}
-
-app.get("/shoppingCart", (req, res) => {
-    const userSession = userIsLoggedIn(req.headers.cookie)
-    if(userSession === undefined || !userSession){
-        const temporaryUserId = uuidv4();
-        sessions[temporaryUserId] = {type: "anonymous-User"}
-        allShoppingCarts[temporaryUserId] = {type: "anonymous-User", shoppingCart: [shoppingCartFunctions.dummyProduct]}
-        saveSessions()
-        saveShoppingCarts()
-        res.set('Set-Cookie', `session=${temporaryUserId}`)
-        res.send(fetchAnonymousShoppingCart(temporaryUserId))
-    }else{
-        res.send(fetchAnonymousShoppingCart(req.headers.cookie.split("=")[1]))
-    }
-    // return res.sendFile('/logged-in.html', {root: __dirname})
-})
-
 app.post('/login', (req, res) => {
-    
     const { username, password } = req.body
     const storedCreds = userCredentials.find((item) => item.user === username )
     if(storedCreds === undefined){
@@ -183,8 +176,6 @@ app.post('/logout', (req,res) => {
     res.send("Logged out successfully!")
 })
 
-
-// 404 handler
 app.get("*", (req, res) =>{
     res.status(404)
     res.send(`<h1>Error 404, page not found</h1>`)
@@ -202,11 +193,6 @@ function userIsLoggedIn(cookie){
     return userSession
 }
 
-/* 
-fetchUserShoppingCart(id){
-    
-} */
-
 function deleteOldSession(cookie){
     delete sessions[cookie]
     saveSessions()
@@ -217,7 +203,6 @@ function deleteTempUserCart(cookie){
     saveShoppingCarts()
 }
     
-
 function fetchAnonymousShoppingCart(cookie){
     return allShoppingCarts[cookie]
 }
@@ -241,7 +226,6 @@ async function saveDataAsJSON(fileName, sourceVariable){
         }
     })
 }
-
 
 app.listen(5000, console.log("Running on port 5000"))
 loadCreds()
