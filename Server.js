@@ -21,7 +21,6 @@ const suggestionDB = require("./Suggestions")
 const url = require('url')
 
 app.post('/suggestions', function(req,res){
-    console.log("SUGGESTIONS REQUEST")
     let phrase = req.body.searchTerm
     let regex
     try{
@@ -103,81 +102,30 @@ let userCredentials
 let allShoppingCarts
 async function loadSessions(){
     sessions = await loadFile('sessions.json') || {}
-//    console.log(sessions)
 }
 async function loadCreds(){
     userCredentials = await loadFile('userCredentials.json') || []
-//    console.log(userCredentials)
 }
 async function loadAllShoppingCarts(){
     allShoppingCarts = await loadFile('shoppingCarts.json') || {}
-//    console.log(allShoppingCarts)
 }
 
 app.get("/shoppingCart", (req, res) => {
+    console.log("SHOPPING CART")
     const userSession = userIsLoggedIn(req.headers.cookie)
     if(userSession === undefined || !userSession){
-        const sessionId = uuidv4();
-        sessions[sessionId] = {type: "anonymous-User"}
-        allShoppingCarts[sessionId] = {type: "anonymous-User", shoppingCart: [shoppingCartFunctions.dummyProduct]}
+        
+        const temporaryUserId = uuidv4();
+        sessions[temporaryUserId] = {type: "anonymous-User"}
+        allShoppingCarts[temporaryUserId] = {type: "anonymous-User", shoppingCart: [shoppingCartFunctions.dummyProduct]}
         saveSessions()
         saveShoppingCarts()
-        res.set('Set-Cookie', `session=${sessionId}`)
-        res.send(fetchUserShoppingCart(sessionId))
+        res.set('Set-Cookie', `session=${temporaryUserId}`)
+        res.send(fetchAnonymousShoppingCart(temporaryUserId))
     }else{
-        console.log(req.headers.cookie)
-        res.send(fetchUserShoppingCart(req.headers.cookie.split("=")[1]))
+        res.send(fetchAnonymousShoppingCart(req.headers.cookie.split("=")[1]))
     }
     // return res.sendFile('/logged-in.html', {root: __dirname})
-})
-
-app.get("/login", (req, res) => {
-    // showCreds()
-    const userSession = userIsLoggedIn(req.headers.cookie)
-    if(userSession === undefined || !userSession){
-        res.sendFile('/login.html', {root: __dirname}) 
-    }
-    else{
-        res.redirect("/")
-    }
-    
-})
-
-app.get('/register', (req, res) => {
-    const userSession = userIsLoggedIn(req.headers.cookie)
-    if(userSession === undefined || !userSession){
-        return res.sendFile('/register.html', {root: __dirname})
-    }
-    else{
-        res.redirect("/")
-    }
-})
-
-app.get('/todos',(req, res) => {
-    const userSession = userIsLoggedIn(req.headers.cookie)
-    if(userSession === undefined || !userSession){
-        return res.redirect("/login")
-    }
-
-    const userId = userSession.userId
-    res.send([{
-        id: 1,
-        title: 'Learn Node',
-        userId,
-    }])
-
-})
-
-app.get("/data", (req, res) => {
-    let rawCookie = req.headers.cookie
-    if(rawCookie === undefined || !rawCookie)
-    {
-        res.status(404)
-        return res.send(`<h1>Error 404, page not found</h1>`)
-    }else{
-        let sessionId = rawCookie.split('=')[1]
-        return res.send(fetchUserShoppingCart(sessionId))
-    }
 })
 
 app.post('/login', (req, res) => {
@@ -203,20 +151,18 @@ app.post('/login', (req, res) => {
                 if(sessions[item].username === (username)){
                     console.log(`The user ${sessions[item].username} is already logged in right now.`)
                     isAlreadyLoggedIn = true
-                    return
+                    res.status(200)
+                    res.send("User already has an active session.")
                 }
             })
-    
-            if(isAlreadyLoggedIn){
-                res.status(500)
-                res.send("User already has an active session.")
-            }
             if(!isAlreadyLoggedIn){
+                deleteOldSession(req.headers.cookie.split("=")[1])
+                deleteTempUserCart(req.headers.cookie.split("=")[1])
                 const sessionId = uuidv4();
                 sessions[sessionId] = { username, userId: 1}
                 saveSessions()
                 res.set('Set-Cookie', `session=${sessionId}`)
-                res.redirect('/')
+                res.send("Logged in successfuly!")
             }
             
         }else{
@@ -240,10 +186,13 @@ app.post("/register", (req,res) => {
                 console.log(err)
                 return
             }
-    
+
             userCredentials.push({user: username, pass: hash})
             const sessionId = uuidv4();
-            sessions[sessionId] = { username, userId: 1}
+            sessions[sessionId] = { type:"user", user: username, userId: 1}
+            allShoppingCarts[sessionId] = {type: "user", id: sessions[sessionId].userId, shoppingCart: [shoppingCartFunctions.dummyProduct]}
+            deleteTempUserCart(req.headers.cookie.split("=")[1])
+            deleteOldSession(req.headers.cookie.split("=")[1])
             saveUserCredentials()
             saveSessions()
             res.set('Set-Cookie', `session=${sessionId}`)
@@ -257,38 +206,45 @@ app.post('/cart', (req, res) => {
     const cookie = req.headers.cookie
     if(cookie === undefined){
         res.status(404)
-        res.send(`<h1>Error 404, page not found</h1>`)
+        return res.send(`<h1>Error 404, page not found</h1>`)
     }
     
     const sessionId = cookie.split('=')[1]
     if(sessionId === undefined){
         res.status(404)
-        res.send(`<h1>Error 404, page not found</h1>`)
+        return res.send(`<h1>Error 404, page not found</h1>`)
     }
 
     let myCart = allShoppingCarts[sessionId].shoppingCart
     let product = req.body.product
     shoppingCartFunctions.addToCart(myCart, product)
-    console.log(myCart)
-    return res.send(fetchUserShoppingCart(sessionId))
+    return res.send(fetchAnonymousShoppingCart(sessionId))
 })
 
 app.post('/logout', (req,res) => {
     const cookie = req.headers.cookie
     if(cookie === undefined){
         res.status(404)
-        res.send(`<h1>Error 404, page not found</h1>`)
+        return res.send(`<h1>Error 404, page not found</h1>`)
     }
     
     const sessionId = cookie.split('=')[1]
     if(sessionId === undefined){
         res.status(404)
-        res.send(`<h1>Error 404, page not found</h1>`)
+        return res.send(`<h1>Error 404, page not found</h1>`)
     }
+
+    if(sessions[sessionId].type === "user")
+    {
         delete sessions[sessionId]
-        saveSessions()
-        res.set('Set-Cookie', 'session=; expires=Thu, 01 Jan 1970 00:00:00 GMT') 
-        res.redirect("/")
+    }else{
+        res.status(200)
+        return res.send("You are not logged in!")
+    }
+    
+    saveSessions()
+    res.set('Set-Cookie', 'session=; expires=Thu, 01 Jan 1970 00:00:00 GMT') 
+    res.send("Logged out successfully!")
 })
 
 
@@ -310,9 +266,23 @@ function userIsLoggedIn(cookie){
     return userSession
 }
 
-function fetchUserShoppingCart(cookie){
-//    console.log(`Cookie: ${cookie}`)
-//    console.log(allShoppingCarts[cookie])
+/* 
+fetchUserShoppingCart(id){
+    
+} */
+
+function deleteOldSession(cookie){
+    delete sessions[cookie]
+    saveSessions()
+}
+
+function deleteTempUserCart(cookie){
+    delete allShoppingCarts[cookie]
+    saveShoppingCarts()
+}
+    
+
+function fetchAnonymousShoppingCart(cookie){
     return allShoppingCarts[cookie]
 }
 
