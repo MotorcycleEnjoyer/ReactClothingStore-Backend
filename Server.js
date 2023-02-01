@@ -169,18 +169,7 @@ app.post("/register", (req,res) => {
 })
 
 app.post('/logout', (req,res) => {
-    const cookie = req.headers.cookie
-    if(cookie === undefined){
-        res.status(404)
-        return res.send(`<h1>Error 404, page not found</h1>`)
-    }
-    
-    const sessionId = cookie.split('=')[1]
-    if(sessionId === undefined){
-        res.status(404)
-        return res.send(`<h1>Error 404, page not found</h1>`)
-    }
-
+    const sessionId = helper.cookieChecker(req.headers.cookie)
     if(sessions[sessionId].type === "user")
     {
         delete sessions[sessionId]
