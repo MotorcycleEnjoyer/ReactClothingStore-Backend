@@ -1,6 +1,4 @@
-const userData = {
-    session: "9a2a94eb-c327-4625-bd4d-cb9e1d53bcfb",
-    cart: [
+const db = [
         {
             id: 1,
             name: "Generic T Shirt",
@@ -39,7 +37,6 @@ const userData = {
             totalCost: 5.99,
             color: "NONE"
             }
-        ],
-}
+        ]
 
-module.exports = {userData}
+module.exports = {db}
