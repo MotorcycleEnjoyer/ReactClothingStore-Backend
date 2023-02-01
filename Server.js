@@ -6,10 +6,8 @@ const saltRounds = 12
 const fs = require('fs')
 const shoppingCartFunctions = require('./Shopping')
 const cors = require("cors")
-const dummyProductDB = require('./dummyProductDB')
 const helper = require("./helper")
 
-const dummyData = dummyProductDB.db
 const corsOptions = {
   origin: 'http://localhost:3000',
   credentials: true
@@ -28,23 +26,14 @@ app.post('/suggestions', function(req,res){
 })
 
 app.post('/addToCart', function(req,res){
-    const cookie = req.headers.cookie
-    if(cookie === undefined){
-        res.status(404)
-        res.send(`<h1>Error 404, page not found</h1>`)
-    }
-    
-    const sessionId = cookie.split("=")[1]
-    if(sessionId === undefined){
-        res.status(404)
-        res.send(`<h1>Error 404, page not found</h1>`)
-    }
+    const sessionId = helper.cookieChecker(req.headers.cookie)
+    if(sessionId === undefined)
+        res.send("Invalid cookie.")
 
     let myCart = allShoppingCarts[sessionId].shoppingCart
-
     let userSubmittedOptions = req.body.data
     let productID = req.body.productId
-    let tempObject = dummyData.filter((item) => item.id === productID)[0]
+    let tempObject = helper.getProductFromProductDatabase("NoName", productID)
     tempObject = {...tempObject, ...userSubmittedOptions}
     shoppingCartFunctions.addToCart(myCart, tempObject)
     res.send("ok")
@@ -90,10 +79,8 @@ async function loadAllShoppingCarts(){
 }
 
 app.get("/shoppingCart", (req, res) => {
-    console.log("SHOPPING CART")
     const userSession = userIsLoggedIn(req.headers.cookie)
     if(userSession === undefined || !userSession){
-        
         const temporaryUserId = uuidv4();
         sessions[temporaryUserId] = {type: "anonymous-User"}
         allShoppingCarts[temporaryUserId] = {type: "anonymous-User", shoppingCart: [shoppingCartFunctions.dummyProduct]}
@@ -179,25 +166,6 @@ app.post("/register", (req,res) => {
             res.send("Registered Successfully!")
         })
     });
-})
-
-app.post('/cart', (req, res) => {
-    const cookie = req.headers.cookie
-    if(cookie === undefined){
-        res.status(404)
-        return res.send(`<h1>Error 404, page not found</h1>`)
-    }
-    
-    const sessionId = cookie.split('=')[1]
-    if(sessionId === undefined){
-        res.status(404)
-        return res.send(`<h1>Error 404, page not found</h1>`)
-    }
-
-    let myCart = allShoppingCarts[sessionId].shoppingCart
-    let product = req.body.product
-    shoppingCartFunctions.addToCart(myCart, product)
-    return res.send(fetchAnonymousShoppingCart(sessionId))
 })
 
 app.post('/logout', (req,res) => {
