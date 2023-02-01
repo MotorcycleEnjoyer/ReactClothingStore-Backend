@@ -7,6 +7,7 @@ const fs = require('fs')
 const shoppingCartFunctions = require('./Shopping')
 const cors = require("cors")
 const dummyProductDB = require('./dummyProductDB')
+const helper = require("./helper")
 
 const dummyData = dummyProductDB.userData.cart
 const corsOptions = {
@@ -17,21 +18,12 @@ app.use(cors(corsOptions));
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
-const suggestionDB = require("./Suggestions")
 const url = require('url')
+
 
 app.post('/suggestions', function(req,res){
     let phrase = req.body.searchTerm
-    let regex
-    try{
-        regex = new RegExp(phrase, 'gi');
-    }catch(e){
-        console.error(e)
-    }
-
-    let searchSuggestions = suggestionDB.filter(item => {
-        return item.match(regex)
-    })
+    let searchSuggestions = helper.findSearchSuggestions(phrase)
     res.send(searchSuggestions)
 })
 
