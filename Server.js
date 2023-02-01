@@ -9,7 +9,7 @@ const cors = require("cors")
 const dummyProductDB = require('./dummyProductDB')
 const helper = require("./helper")
 
-const dummyData = dummyProductDB.userData.cart
+const dummyData = dummyProductDB.db
 const corsOptions = {
   origin: 'http://localhost:3000',
   credentials: true
@@ -54,29 +54,16 @@ app.get('/s', function(req,res){
     let urlObject = url.parse(req.url)
     let rawQuery = urlObject.query.split("=")[1]
     let properQuery = rawQuery.split("+").join(" ")
-    let searchResults = getProductFromProductDatabase(properQuery)
+    let searchResults = helper.getProductFromProductDatabase(properQuery)
     res.send(searchResults)
 })
 
 app.get('/p/*/id/*', function(req,res){
     let urlObject = url.parse(req.url)
     let productID = parseInt(urlObject.href.split("id/")[1])
-    let searchResults = dummyData.filter((item) => item.id === productID)
+    let searchResults = helper.getProductFromProductDatabase("NoName", productID)
     res.send(searchResults)
 })
-
-function getProductFromProductDatabase(productName){
-    let regex
-    try{
-        regex = new RegExp(productName, 'gi');
-    }catch(e){
-        console.error(e)
-    }
-
-    return dummyData.filter(item => {
-        return item.name.match(regex)
-    })
-}
 
 const loadFile = async (fileName) => {
     try{
