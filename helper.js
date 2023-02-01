@@ -27,8 +27,20 @@ function getProductFromProductDatabase(productName, productId){
         dummyProductDB.db.filter(item => item.name.match(regex))
     )
     }else{
-        return dummyProductDB.db.filter(item => item.id === productId)
+        return dummyProductDB.db.filter(item => item.id === productId)[0]
     }
 }
 
-module.exports = { findSearchSuggestions, getProductFromProductDatabase}
+function cookieChecker(cookie){
+    if(cookie === undefined){
+        return undefined
+    }
+
+    const sessionId = cookie.split("=")[1]
+    if(sessionId === undefined){
+        return undefined
+    }
+    return sessionId
+}
+
+module.exports = { findSearchSuggestions, getProductFromProductDatabase, cookieChecker}
