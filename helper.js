@@ -1,5 +1,7 @@
 const dummyProductDB = require('./dummyProductDB')
 const suggestionDB = require("./Suggestions")
+const uuidv4 = require('uuid').v4
+const url = require("url")
 
 function genRegex(searchTerm)
 {   
@@ -58,11 +60,11 @@ function getQueryFromUrl(urlData){
 }
 
 function getProductIdFromUrl(urlData){
-    let urlObject = url.parse(req.url)
+    let urlObject = url.parse(urlData)
     return parseInt(urlObject.href.split("id/")[1])
 }
 
-function checkIfUserIsLoggedIn(arr, sessions){
+function checkIfUserIsLoggedIn(arr, sessions, username){
     arr.forEach((item) => {
         console.log(`${sessions[item].username}`)
         if(sessions[item].username === (username)){
@@ -73,8 +75,14 @@ function checkIfUserIsLoggedIn(arr, sessions){
     return false
 }
 
+function createLoggedInUserSession(sessions, user){
+    const sessionId = uuidv4();
+    sessions[sessionId] = { type:"user", username: user, userId: 1}
+    return sessionId
+}
 
 module.exports = 
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
-    createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl,
+    createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
+    createLoggedInUserSession, 
     }
