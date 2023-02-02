@@ -3,7 +3,6 @@ const app = express()
 const uuidv4 = require('uuid').v4
 const bcrypt = require('bcrypt')
 const saltRounds = 12
-const url = require('url')
 const fs = require("fs")
 const shoppingCartFunctions = require('./Shopping')
 const cors = require("cors")
@@ -79,7 +78,7 @@ app.post('/login', (req, res) => {
         }
         if(result){    
             let arr = Object.keys(sessions)
-            let isAlreadyLoggedIn = helper.checkIfUserIsLoggedIn(arr, sessions)
+            let isAlreadyLoggedIn = helper.checkIfUserIsLoggedIn(arr, sessions, username)
             if(isAlreadyLoggedIn){
                 res.status(200)
                 res.send("Already logged in!")
@@ -87,9 +86,8 @@ app.post('/login', (req, res) => {
             if(!isAlreadyLoggedIn){
                 deleteOldSession(req.headers.cookie.split("=")[1])
                 deleteTempUserCart(req.headers.cookie.split("=")[1])
-                const sessionId = uuidv4();
-                sessions[sessionId] = { username, userId: 1}
-                saveSessions(sessions)
+                const sessionId = helper.createLoggedInUserSession(sessions, username)
+                saveSessions()
                 res.set('Set-Cookie', `session=${sessionId}`)
                 res.send("Logged in successfuly!")
             }
@@ -115,15 +113,13 @@ app.post("/register", (req,res) => {
                 console.log(err)
                 return
             }
-
             userCredentials.push({user: username, pass: hash})
-            const sessionId = uuidv4();
-            sessions[sessionId] = { type:"user", username: username, userId: 1}
-            allShoppingCarts[sessionId] = {type: "user", id: sessions[sessionId].userId, shoppingCart: [shoppingCartFunctions.dummyProduct]}
+            let sessionId = helper.createLoggedInUserSession(sessions, username)
+            allShoppingCarts[sessionId] = {type: "user", id: sessions[sessionId].userId, shoppingCart: [shoppingCartFunctions.dummyProduct]}    
             deleteTempUserCart(req.headers.cookie.split("=")[1])
             deleteOldSession(req.headers.cookie.split("=")[1])
-            saveUserCredentials(userCredentials)
-            saveSessions(sessions)
+            saveUserCredentials()
+            saveSessions()
             res.set('Set-Cookie', `session=${sessionId}`)
             res.status(200)
             res.send("Registered Successfully!")
@@ -141,7 +137,7 @@ app.post('/logout', (req,res) => {
         return res.send("You are not logged in!")
     }
     
-    saveSessions(sessions)
+    saveSessions()
     res.set('Set-Cookie', 'session=; expires=Thu, 01 Jan 1970 00:00:00 GMT') 
     res.send("Logged out successfully!")
 })
@@ -165,12 +161,12 @@ function userIsLoggedIn(cookie){
 
 function deleteOldSession(cookie){
     delete sessions[cookie]
-    saveSessions(sessions)
+    saveSessions()
 }
 
 function deleteTempUserCart(cookie){
     delete allShoppingCarts[cookie]
-    saveShoppingCarts(allShoppingCarts)
+    saveShoppingCarts()
 }
     
 function fetchAnonymousShoppingCart(cookie){
