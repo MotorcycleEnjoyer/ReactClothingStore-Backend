@@ -26,7 +26,7 @@ app.get("/shoppingCart", (req, res) => {
         helper.createAnonymousShoppingCart(temporaryUserId, allShoppingCarts)
         saveSessions(); saveShoppingCarts();        
         res.set('Set-Cookie', `session=${temporaryUserId}`)
-        res.send(fetchAnonymousShoppingCart(temporaryUserId))
+        return res.send(fetchAnonymousShoppingCart(temporaryUserId))
     }
     res.send(fetchAnonymousShoppingCart(req.headers.cookie.split("=")[1]))
 })
