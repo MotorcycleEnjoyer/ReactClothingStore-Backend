@@ -3,8 +3,8 @@ const app = express()
 const uuidv4 = require('uuid').v4
 const bcrypt = require('bcrypt')
 const saltRounds = 12
-const fs = require('fs')
 const url = require('url')
+const fs = require("fs")
 const shoppingCartFunctions = require('./Shopping')
 const cors = require("cors")
 const helper = require("./helper")
@@ -17,36 +17,15 @@ app.use(cors(corsOptions));
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
-const loadFile = async (fileName) => {
-    try{
-        const data = await fs.promises.readFile(fileName, "utf-8")
-        let temp = JSON.parse(data) || undefined
-        return temp
-    } catch (error){
-        console.error(error)
-        return undefined
-    }
-}
-
 let sessions, userCredentials, allShoppingCarts
-async function loadSessions(){
-    sessions = await loadFile('sessions.json') || {}
-}
-async function loadCreds(){
-    userCredentials = await loadFile('userCredentials.json') || []
-}
-async function loadAllShoppingCarts(){
-    allShoppingCarts = await loadFile('shoppingCarts.json') || {}
-}
 
 app.get("/shoppingCart", (req, res) => {
     const userSession = userIsLoggedIn(req.headers.cookie)
     if(userSession === undefined || !userSession){
         const temporaryUserId = uuidv4();
-        sessions[temporaryUserId] = {type: "anonymous-User"}
-        allShoppingCarts[temporaryUserId] = {type: "anonymous-User", shoppingCart: [shoppingCartFunctions.dummyProduct]}
-        saveSessions()
-        saveShoppingCarts()
+        helper.createAnonymousSession(temporaryUserId, sessions)
+        helper.createAnonymousShoppingCart(temporaryUserId, allShoppingCarts)
+        saveSessions(); saveShoppingCarts();        
         res.set('Set-Cookie', `session=${temporaryUserId}`)
         res.send(fetchAnonymousShoppingCart(temporaryUserId))
     }
@@ -54,17 +33,14 @@ app.get("/shoppingCart", (req, res) => {
 })
 
 app.get('/s', function(req,res){
-    let urlObject = url.parse(req.url)
-    let rawQuery = urlObject.query.split("=")[1]
-    let properQuery = rawQuery.split("+").join(" ")
+    let properQuery = helper.getQueryFromUrl(req.url)
     let searchResults = helper.getProductFromProductDatabase(properQuery)
     res.send(searchResults)
 })
 
 app.get('/p/*/id/*', function(req,res){
-    let urlObject = url.parse(req.url)
-    let productID = parseInt(urlObject.href.split("id/")[1])
-    let searchResults = helper.getProductFromProductDatabase("NoName", productID)
+    let productId = helper.getProductIdFromUrl(req.url)
+    let searchResults = helper.getProductFromProductDatabase("NoName", productId)
     res.send(searchResults)
 })
 
@@ -79,11 +55,10 @@ app.post('/addToCart', function(req,res){
     if(sessionId === undefined)
         res.send("Invalid cookie.")
 
+    const {productId, data } = req.body
     let myCart = allShoppingCarts[sessionId].shoppingCart
-    let userSubmittedOptions = req.body.data
-    let productID = req.body.productId
-    let tempObject = helper.getProductFromProductDatabase("NoName", productID)
-    tempObject = {...tempObject, ...userSubmittedOptions}
+    let tempObject = helper.getProductFromProductDatabase("NoName", productId)
+    tempObject = {...tempObject, ...data}
     shoppingCartFunctions.addToCart(myCart, tempObject)
     res.send("ok")
 })
@@ -111,7 +86,7 @@ app.post('/login', (req, res) => {
                     console.log(`The user ${sessions[item].username} is already logged in right now.`)
                     isAlreadyLoggedIn = true
                     res.status(200)
-                    res.send("User already has an active session.")
+                    return res.send("User already has an active session.")
                 }
             })
             if(!isAlreadyLoggedIn){
@@ -119,7 +94,7 @@ app.post('/login', (req, res) => {
                 deleteTempUserCart(req.headers.cookie.split("=")[1])
                 const sessionId = uuidv4();
                 sessions[sessionId] = { username, userId: 1}
-                saveSessions()
+                saveSessions(sessions)
                 res.set('Set-Cookie', `session=${sessionId}`)
                 res.send("Logged in successfuly!")
             }
@@ -148,12 +123,12 @@ app.post("/register", (req,res) => {
 
             userCredentials.push({user: username, pass: hash})
             const sessionId = uuidv4();
-            sessions[sessionId] = { type:"user", user: username, userId: 1}
+            sessions[sessionId] = { type:"user", username: username, userId: 1}
             allShoppingCarts[sessionId] = {type: "user", id: sessions[sessionId].userId, shoppingCart: [shoppingCartFunctions.dummyProduct]}
             deleteTempUserCart(req.headers.cookie.split("=")[1])
             deleteOldSession(req.headers.cookie.split("=")[1])
-            saveUserCredentials()
-            saveSessions()
+            saveUserCredentials(userCredentials)
+            saveSessions(sessions)
             res.set('Set-Cookie', `session=${sessionId}`)
             res.status(200)
             res.send("Registered Successfully!")
@@ -171,7 +146,7 @@ app.post('/logout', (req,res) => {
         return res.send("You are not logged in!")
     }
     
-    saveSessions()
+    saveSessions(sessions)
     res.set('Set-Cookie', 'session=; expires=Thu, 01 Jan 1970 00:00:00 GMT') 
     res.send("Logged out successfully!")
 })
@@ -195,16 +170,46 @@ function userIsLoggedIn(cookie){
 
 function deleteOldSession(cookie){
     delete sessions[cookie]
-    saveSessions()
+    saveSessions(sessions)
 }
 
 function deleteTempUserCart(cookie){
     delete allShoppingCarts[cookie]
-    saveShoppingCarts()
+    saveShoppingCarts(allShoppingCarts)
 }
     
 function fetchAnonymousShoppingCart(cookie){
     return allShoppingCarts[cookie]
+}
+
+app.listen(5000, console.log("Running on port 5000"), async()=>{
+    userCredentials = await loadCreds()
+    sessions = await loadSessions()
+    allShoppingCarts = await loadAllShoppingCarts()
+})
+
+const loadFile = async (fileName) => {
+    try{
+        const data = await fs.promises.readFile(fileName, "utf-8")
+        let temp = JSON.parse(data) || undefined
+        return temp
+    } catch (error){
+        console.error(error)
+        return undefined
+    }
+}
+
+async function loadSessions(){
+    let sessions = await loadFile('sessions.json') || {}
+    return sessions
+}
+async function loadCreds(){
+    let userCredentials = await loadFile('userCredentials.json') || []
+    return userCredentials
+}
+async function loadAllShoppingCarts(){
+    let allShoppingCarts = await loadFile('shoppingCarts.json') || {}
+    return allShoppingCarts
 }
 
 function saveUserCredentials(){
@@ -226,8 +231,3 @@ async function saveDataAsJSON(fileName, sourceVariable){
         }
     })
 }
-
-app.listen(5000, console.log("Running on port 5000"))
-loadCreds()
-loadSessions()
-loadAllShoppingCarts()

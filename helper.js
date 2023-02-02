@@ -43,4 +43,27 @@ function cookieChecker(cookie){
     return sessionId
 }
 
-module.exports = { findSearchSuggestions, getProductFromProductDatabase, cookieChecker}
+function createAnonymousSession(sessionId, sessionStorage){
+    sessionStorage[sessionId] = {type: "anonymous-User"}
+}
+
+function createAnonymousShoppingCart(session, shoppingCartStorage){
+    shoppingCartStorage[session] = {type: "anonymous-User", shoppingCart: []}
+}
+
+function getQueryFromUrl(urlData){
+    let urlObject = url.parse(urlData)
+    let rawQuery = urlObject.query.split("=")[1]
+    return rawQuery.split("+").join(" ")
+}
+
+function getProductIdFromUrl(urlData){
+    let urlObject = url.parse(req.url)
+    return parseInt(urlObject.href.split("id/")[1])
+}
+
+
+module.exports = 
+{ findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
+    createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl,
+    }
