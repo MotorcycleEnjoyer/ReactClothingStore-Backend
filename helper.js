@@ -62,6 +62,17 @@ function getProductIdFromUrl(urlData){
     return parseInt(urlObject.href.split("id/")[1])
 }
 
+function checkIfUserIsLoggedIn(arr, sessions){
+    arr.forEach((item) => {
+        console.log(`${sessions[item].username}`)
+        if(sessions[item].username === (username)){
+            console.log(`The user ${sessions[item].username} is already logged in right now.`)
+            return true
+        }
+    })
+    return false
+}
+
 
 module.exports = 
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 

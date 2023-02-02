@@ -79,16 +79,11 @@ app.post('/login', (req, res) => {
         }
         if(result){    
             let arr = Object.keys(sessions)
-            let isAlreadyLoggedIn = false
-            arr.forEach((item) => {
-                console.log(`${sessions[item].username}`)
-                if(sessions[item].username === (username)){
-                    console.log(`The user ${sessions[item].username} is already logged in right now.`)
-                    isAlreadyLoggedIn = true
-                    res.status(200)
-                    return res.send("User already has an active session.")
-                }
-            })
+            let isAlreadyLoggedIn = helper.checkIfUserIsLoggedIn(arr, sessions)
+            if(isAlreadyLoggedIn){
+                res.status(200)
+                res.send("Already logged in!")
+            }
             if(!isAlreadyLoggedIn){
                 deleteOldSession(req.headers.cookie.split("=")[1])
                 deleteTempUserCart(req.headers.cookie.split("=")[1])
