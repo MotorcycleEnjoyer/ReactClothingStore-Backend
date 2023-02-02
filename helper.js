@@ -65,14 +65,19 @@ function getProductIdFromUrl(urlData){
 }
 
 function checkIfUserIsLoggedIn(arr, sessions, username){
-    arr.forEach((item) => {
-        console.log(`${sessions[item].username}`)
+    let isLoggedIn = false
+
+    arr.every((item) => {
         if(sessions[item].username === (username)){
-            console.log(`The user ${sessions[item].username} is already logged in right now.`)
-            return true
+            isLoggedIn = true
         }
+        if(isLoggedIn)
+            return false
+        
+        return true
     })
-    return false
+    
+    return isLoggedIn
 }
 
 function createLoggedInUserSession(sessions, user){
