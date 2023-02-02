@@ -104,7 +104,7 @@ app.post("/register", (req,res) => {
     console.time("bcrypt my implementaiton")
     bcrypt.genSalt(saltRounds, function(err, salt) {
         if(err){
-            console.lop(err)
+            console.log(err)
             return
         }
         bcrypt.hash(password, salt, function(err, hash) {
