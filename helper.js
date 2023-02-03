@@ -2,6 +2,16 @@ const dummyProductDB = require('./dummyProductDB')
 const suggestionDB = require("./Suggestions")
 const uuidv4 = require('uuid').v4
 const url = require("url")
+const blockedCharacters = new RegExp("[~`!@#$%^&()_={}\\[\\]\\:;,\\.\\/<>\\\\*\\-+\\?]")
+
+function isOnlyNumbersAndLetters(value){
+    if(blockedCharacters.test(value)){
+        console.log("INVALID REGEX CHARS SPOTTED") 
+        return false
+    }else{
+        return true
+    }
+}
 
 function genRegex(searchTerm)
 {   
@@ -89,5 +99,5 @@ function createLoggedInUserSession(sessions, user){
 module.exports = 
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
-    createLoggedInUserSession, 
+    createLoggedInUserSession, isOnlyNumbersAndLetters
     }

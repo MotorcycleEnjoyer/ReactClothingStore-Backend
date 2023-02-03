@@ -7,6 +7,15 @@ const fs = require("fs")
 const shoppingCartFunctions = require('./Shopping')
 const cors = require("cors")
 const helper = require("./helper")
+const { RateLimiterMemory } = require('rate-limiter-flexible');
+
+
+const opts = {
+    points: 4, // 6 points
+    duration: 3, // Per second
+  };
+  
+const rateLimiter = new RateLimiterMemory(opts);
 
 const corsOptions = {
   origin: 'http://localhost:3000',
@@ -32,21 +41,39 @@ app.get("/shoppingCart", (req, res) => {
 })
 
 app.get('/s', function(req,res){
-    let properQuery = helper.getQueryFromUrl(req.url)
-    let searchResults = helper.getProductFromProductDatabase(properQuery)
-    res.send(searchResults)
+    let query = helper.getQueryFromUrl(req.url)
+    if(helper.isOnlyNumbersAndLetters(query)){
+        let searchResults = helper.getProductFromProductDatabase(query)
+        return res.send(searchResults)
+    }else{
+        res.send("INVALID SEARCH TERMS!!!")
+    }
+    
 })
 
 app.get('/p/*/id/*', function(req,res){
-    let productId = helper.getProductIdFromUrl(req.url)
-    let searchResults = helper.getProductFromProductDatabase("NoName", productId)
-    res.send(searchResults)
+    rateLimiter.consume(req.headers.cookie, 2) // consume 2 points
+      .then((rateLimiterRes) => {
+        // 2 points consumed
+        let productId = helper.getProductIdFromUrl(req.url)
+        let searchResults = helper.getProductFromProductDatabase("NoName", productId)
+        return res.send(searchResults)
+      })
+      .catch((rateLimiterRes) => {
+        // Not enough points to consume
+        return res.send("TOO MANY REQUESTS! SLOW DOWN!")
+      });
+    
 })
 
 app.post('/suggestions', function(req,res){
     let phrase = req.body.searchTerm
-    let searchSuggestions = helper.findSearchSuggestions(phrase)
-    res.send(searchSuggestions)
+    if(helper.isOnlyNumbersAndLetters(phrase)){
+        let searchSuggestions = helper.findSearchSuggestions(phrase)
+        return res.send(searchSuggestions)
+    }else{
+        res.send("Invalid Characters")
+    }
 })
 
 app.post('/addToCart', function(req,res){
