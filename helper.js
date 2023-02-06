@@ -3,6 +3,7 @@ const suggestionDB = require("./Suggestions")
 const uuidv4 = require('uuid').v4
 const url = require("url")
 const blockedCharacters = new RegExp("[~`!@#$%^&()_={}\\[\\]\\:;,\\.\\/<>\\\\*\\-+\\?]")
+const MAX_SUGGESTION_LENGTH = 10
 
 function isOnlyNumbersAndLetters(value){
     if(blockedCharacters.test(value)){
@@ -25,11 +26,32 @@ function genRegex(searchTerm)
     return regex
 }
 
+// Credit to Icepickle on StackOverflow
+// URL: https://stackoverflow.com/questions/56168771/how-to-limit-for-10-results-the-array-filter
+function *limitedArrayPull(array, condition, maxSize) {
+    if (!maxSize || maxSize > array.length) {
+      maxSize = array.length;
+    }
+    let count = 0;
+    let i = 0;
+    while ( count < maxSize && i < array.length ) {
+      if (condition(array[i])) {
+        yield array[i];
+        count++;
+      }
+      i++;
+    }
+  }
+
 function findSearchSuggestions(searchTerm){
     let regex = genRegex(searchTerm)
-    return(
-        suggestionDB.filter(item => item.match(regex))
+
+    const suggestions = Array.from(
+        limitedArrayPull(suggestionDB, i => i.match(regex), 10)
     )
+
+    console.log(suggestions)
+    return suggestions
 }
 
 function getProductFromProductDatabase(productName, productId){
