@@ -28,7 +28,7 @@ function genRegex(searchTerm)
 
 // Credit to Icepickle on StackOverflow
 // URL: https://stackoverflow.com/questions/56168771/how-to-limit-for-10-results-the-array-filter
-function *limitedArrayPull(array, condition, maxSize) {
+function* limitedArrayPull(array, condition, maxSize) {
     if (!maxSize || maxSize > array.length) {
       maxSize = array.length;
     }
