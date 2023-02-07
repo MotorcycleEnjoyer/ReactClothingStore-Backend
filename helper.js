@@ -3,7 +3,6 @@ const suggestionDB = require("./Suggestions")
 const uuidv4 = require('uuid').v4
 const url = require("url")
 const blockedCharacters = new RegExp("[~`!@#$%^&()_={}\\[\\]\\:;,\\.\\/<>\\\\*\\-+\\?]")
-const MAX_SUGGESTION_LENGTH = 10
 
 function isOnlyNumbersAndLetters(value){
     if(blockedCharacters.test(value)){
@@ -57,9 +56,10 @@ function findSearchSuggestions(searchTerm){
 function getProductFromProductDatabase(productName, productId){
     if(productId === undefined){
         let regex = genRegex(productName)
-    return(
-        dummyProductDB.db.filter(item => item.name.match(regex))
-    )
+        const products = Array.from(
+            limitedArrayPull(dummyProductDB.db, i => i.name.match(regex), 10)
+        )
+        return(products)
     }else{
         return dummyProductDB.db.filter(item => item.id === productId)[0]
     }
