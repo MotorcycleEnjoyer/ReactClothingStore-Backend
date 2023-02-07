@@ -140,8 +140,47 @@ function checkIfCartAlreadyHasIdenticalProduct(cart, productId, userData){
     }
 }
 
+function validateDataGiven(productId, dataObject){
+    if(getProductFromProductDatabase("NONE", productId) === [])
+    {
+        console.error(`Product Id "${productId} is not within product database.`)
+        return false
+    }
+    let amount = dataObject.amount
+    if(amount <= 0 || amount >= 21){
+        console.error(`Amount ${amount} is invalid.`)
+        return false
+    }
+    let size = dataObject.size
+    let properSizes = ["S","M","L", "XL","XXL"]
+    if(properSizes.indexOf(size) === -1){
+        console.error(`Given size ${size} is invalid.`)
+        return false
+    }
+    let sex = dataObject.sexCategory
+    if(sex !== "M" && sex !== "F"){
+        console.error(`Given sex "${sex}" is not in Size Chart!`)
+        return false
+    }
+    let ageCategory = dataObject.ageCategory
+    if(ageCategory !== "kids" && ageCategory !== "adults"){
+        console.error(`Given ageCategory "${ageCategory}" not in Size Chart!`)
+        return false
+    }
+    let color = dataObject.color
+    let product = getProductFromProductDatabase("NONE", productId)
+    if(product.colorOptions.indexOf(color) === -1){
+        console.error(`The color "${color}" is invalid option for product: "${product.name}"`)
+        return false
+    }
+
+    console.log("PASSED ALL CHECKS")
+    return true
+}
+
 module.exports = 
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
     createLoggedInUserSession, isOnlyNumbersAndLetters, checkIfCartAlreadyHasIdenticalProduct,
+    validateDataGiven,
     }
