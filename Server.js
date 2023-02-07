@@ -82,17 +82,23 @@ app.post('/addToCart', function(req,res){
         res.send("Invalid cookie.")
 
     const {productId, data } = req.body
+    let validDataGiven = helper.validateDataGiven(productId, data)
     
-    let myCart = allShoppingCarts[sessionId].shoppingCart
-    let addedToExistingProductInCart = helper.checkIfCartAlreadyHasIdenticalProduct(myCart, productId, data)
-    if(addedToExistingProductInCart){
-        return res.status(200).send("ok")
+    if(validDataGiven){
+        let myCart = allShoppingCarts[sessionId].shoppingCart
+        let addedToExistingProductInCart = helper.checkIfCartAlreadyHasIdenticalProduct(myCart, productId, data)
+        if(addedToExistingProductInCart){
+            return res.status(200).send("ok")
+        }else{
+            let tempObject = helper.getProductFromProductDatabase("NoName", productId)
+            tempObject = {...tempObject, ...data, amount: parseInt(data.amount)}
+            shoppingCartFunctions.addToCart(myCart, tempObject)
+            return res.status(200).send("ok")
+        }
     }else{
-        let tempObject = helper.getProductFromProductDatabase("NoName", productId)
-        tempObject = {...tempObject, ...data, amount: parseInt(data.amount)}
-        shoppingCartFunctions.addToCart(myCart, tempObject)
-        res.status(200).send("ok")
+        return res.status(200).send("Could not add to cart. Reason: Invalid data provided.")
     }
+    
 })
 
 app.post('/login', (req, res) => {
