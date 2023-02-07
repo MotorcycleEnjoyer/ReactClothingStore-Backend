@@ -86,7 +86,7 @@ app.post('/addToCart', function(req,res){
     
     if(validDataGiven){
         let myCart = allShoppingCarts[sessionId].shoppingCart
-        let addedToExistingProductInCart = helper.checkIfCartAlreadyHasIdenticalProduct(myCart, productId, data, amount)
+        let addedToExistingProductInCart = helper.incrementAmountOfExistingCartItem(myCart, productId, data, amount)
         if(addedToExistingProductInCart){
             return res.status(200).send("ok")
         }else{
