@@ -118,35 +118,43 @@ function createLoggedInUserSession(sessions, user){
     return sessionId
 }
 
-function checkIfCartAlreadyHasIdenticalProduct(cart, productId, userData){
-    let index = cart.findIndex(item => {
+function checkIfCartAlreadyHasIdenticalProduct(cart, productId, userData, amount){
+    const index = cart.findIndex(item => {
         if(item.id === productId){
-            if(item.color === userData.color
-                && item.sexCategory === userData.sexCategory
-                && item.ageCategory === userData.ageCategory
-                && item.size === userData.size
-            ){
+            let categories = Object.keys(userData)
+            let allMatch = true
+            for(key of categories){
+                if(userData[key] !== item[key])
+                {
+                    allMatch = false
+                }
+            }
+            if(allMatch){
                 return item
+            } 
             }
         }
-    })
+    )
 
     if(index === -1){
         return false
     }
     else{
-        cart[index].amount += parseInt(userData.amount)
+        cart[index].amount += parseInt(amount)
         return true
     }
 }
 
-function validateDataGiven(productId, dataObject){
+function validateDataGiven(productId, dataObject, amount){
+/*     let dataKeys = Object.keys(dataObject)
+    for(key of dataKeys){
+        
+    } */
     if(getProductFromProductDatabase("NONE", productId) === [])
     {
         console.error(`Product Id "${productId} is not within product database.`)
         return false
     }
-    let amount = dataObject.amount
     if(amount <= 0 || amount >= 21){
         console.error(`Amount ${amount} is invalid.`)
         return false
