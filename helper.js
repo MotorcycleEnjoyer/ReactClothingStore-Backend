@@ -118,8 +118,30 @@ function createLoggedInUserSession(sessions, user){
     return sessionId
 }
 
+function checkIfCartAlreadyHasIdenticalProduct(cart, productId, userData){
+    let index = cart.findIndex(item => {
+        if(item.id === productId){
+            if(item.color === userData.color
+                && item.sexCategory === userData.sexCategory
+                && item.ageCategory === userData.ageCategory
+                && item.size === userData.size
+            ){
+                return item
+            }
+        }
+    })
+
+    if(index === -1){
+        return false
+    }
+    else{
+        cart[index].amount += parseInt(userData.amount)
+        return true
+    }
+}
+
 module.exports = 
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
-    createLoggedInUserSession, isOnlyNumbersAndLetters
+    createLoggedInUserSession, isOnlyNumbersAndLetters, checkIfCartAlreadyHasIdenticalProduct,
     }
