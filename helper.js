@@ -118,7 +118,16 @@ function createLoggedInUserSession(sessions, user){
     return sessionId
 }
 
-function checkIfCartAlreadyHasIdenticalProduct(cart, productId, userData, amount){
+function editItemInCart(cart, productId, userData){
+    let index = getIndexOfItemInCart(cart, productId, userData)
+    if(index === -1){
+        return false
+    }else{
+        cart[index] = {...cart[index], ...userData}
+    }
+}
+
+function getIndexOfItemInCart(cart, productId, userData){
     const index = cart.findIndex(item => {
         if(item.id === productId){
             let categories = Object.keys(userData)
@@ -135,6 +144,11 @@ function checkIfCartAlreadyHasIdenticalProduct(cart, productId, userData, amount
             }
         }
     )
+    return index
+}
+
+function incrementAmountOfExistingCartItem(cart, productId, userData, amount){
+    let index = getIndexOfItemInCart(cart, productId, userData)
 
     if(index === -1){
         return false
@@ -189,6 +203,6 @@ function validateDataGiven(productId, dataObject, amount){
 module.exports = 
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
-    createLoggedInUserSession, isOnlyNumbersAndLetters, checkIfCartAlreadyHasIdenticalProduct,
+    createLoggedInUserSession, isOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
     validateDataGiven,
     }
