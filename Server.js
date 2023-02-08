@@ -46,7 +46,7 @@ app.get('/s', function(req,res){
         let searchResults = helper.getProductFromProductDatabase(query)
         return res.send(searchResults)
     }else{
-        res.send("INVALID SEARCH TERMS!!!")
+        res.send("GET/s: INVALID SEARCH TERMS!!!")
     }
     
 })
@@ -72,20 +72,23 @@ app.post('/suggestions', function(req,res){
         let searchSuggestions = helper.findSearchSuggestions(phrase)
         return res.send(searchSuggestions)
     }else{
-        res.send("Invalid Characters")
+        res.send("POST/suggestions: Invalid Characters")
     }
 })
 
 app.post('/addToCart', function(req,res){
     const sessionId = helper.cookieChecker(req.headers.cookie)
     if(sessionId === undefined)
-        res.send("Invalid cookie.")
+        res.send("POST/addToCart: Invalid cookie.")
 
     const {productId, data, amount } = req.body
     let validDataGiven = helper.validateDataGiven(productId, data, amount)
     
     if(validDataGiven){
         let myCart = allShoppingCarts[sessionId].shoppingCart
+        if(myCart === undefined){
+            return res.status(200).send("POST/addToCart: Cart is not defined.")
+        }
         let addedToExistingProductInCart = helper.incrementAmountOfExistingCartItem(myCart, productId, data, amount)
         if(addedToExistingProductInCart){
             return res.status(200).send("ok")
@@ -101,13 +104,33 @@ app.post('/addToCart', function(req,res){
     
 })
 
+app.post('/editCartItem', (req, res) => {
+    const sessionId = helper.cookieChecker(req.headers.cookie)
+    if(sessionId === undefined)
+        res.send("POST/editCartItem: Invalid cookie.")
+
+    const {productId, data, amount } = req.body
+    let validDataGiven = helper.validateDataGiven(productId, data, amount)
+
+    if(validDataGiven){
+        let editSucceeded = helper.editItemInCart(productId, data, amount)
+        if(editSucceeded){
+            res.send("POST/editCartItem: Success")
+        }else{
+            res.send("POST/editCartItem: Failure")
+        }
+    }else{
+        res.send("POST/editCartItem: Invalid data.")
+    }
+})
+
 app.post('/login', (req, res) => {
     const { username, password } = req.body
     const storedCreds = userCredentials.find((item) => item.user === username )
     if(storedCreds === undefined){
-        console.log("bad creds")
+        console.log("POST/login: bad creds")
         res.status(200)
-        return res.send("Incorrect credentials. Please try again")
+        return res.send("POST/login: Incorrect credentials. Please try again")
     }
     
     bcrypt.compare(password, storedCreds.pass, (err, result) => {
@@ -120,7 +143,7 @@ app.post('/login', (req, res) => {
             let isAlreadyLoggedIn = helper.checkIfUserIsLoggedIn(arr, sessions, username)
             if(isAlreadyLoggedIn){
                 res.status(200)
-                res.send("Already logged in!")
+                res.send("POST/login: Already logged in!")
             }
             if(!isAlreadyLoggedIn){
                 deleteOldSession(req.headers.cookie.split("=")[1])
@@ -128,26 +151,24 @@ app.post('/login', (req, res) => {
                 const sessionId = helper.createLoggedInUserSession(sessions, username)
                 saveSessions()
                 res.set('Set-Cookie', `session=${sessionId}`)
-                res.send("Logged in successfuly!")
+                res.send("POST/login: Logged in successfuly!")
             }
             
         }else{
-            console.log("bad creds BECAUSE BCRYPT FAILED")
-            return res.sendFile('/login-try-again.html', {root: __dirname})
+            console.log("POST/login: bad creds BECAUSE BCRYPT FAILED")
+            return res.send("POST/login: Login failed.")
         }
     })
 })
 
 app.post("/register", (req,res) => {
     const { username, password } = req.body
-    console.time("bcrypt my implementaiton")
     bcrypt.genSalt(saltRounds, function(err, salt) {
         if(err){
             console.log(err)
             return
         }
         bcrypt.hash(password, salt, function(err, hash) {
-            console.timeEnd("bcrypt my implementaiton")
             if(err){
                 console.log(err)
                 return
@@ -161,7 +182,7 @@ app.post("/register", (req,res) => {
             saveSessions()
             res.set('Set-Cookie', `session=${sessionId}`)
             res.status(200)
-            res.send("Registered Successfully!")
+            res.send("POST/register: Registered Successfully!")
         })
     });
 })
@@ -173,12 +194,12 @@ app.post('/logout', (req,res) => {
         delete sessions[sessionId]
     }else{
         res.status(200)
-        return res.send("You are not logged in!")
+        return res.send("POST/logout: You are not logged in!")
     }
     
     saveSessions()
     res.set('Set-Cookie', 'session=; expires=Thu, 01 Jan 1970 00:00:00 GMT') 
-    res.send("Logged out successfully!")
+    res.send("POST/logout: Logged out successfully!")
 })
 
 app.get("*", (req, res) =>{
