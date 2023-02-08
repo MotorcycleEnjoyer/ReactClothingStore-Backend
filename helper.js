@@ -124,6 +124,7 @@ function editItemInCart(cart, productId, userData){
         return false
     }else{
         cart[index] = {...cart[index], ...userData}
+        return true
     }
 }
 
@@ -204,5 +205,5 @@ module.exports =
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
     createLoggedInUserSession, isOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
-    validateDataGiven,
+    validateDataGiven, editItemInCart
     }
