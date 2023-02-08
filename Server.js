@@ -42,7 +42,7 @@ app.get("/shoppingCart", (req, res) => {
 
 app.get('/s', function(req,res){
     let query = helper.getQueryFromUrl(req.url)
-    if(helper.isOnlyNumbersAndLetters(query)){
+    if(helper.hasOnlyNumbersAndLetters(query)){
         let searchResults = helper.getProductFromProductDatabase(query)
         return res.send(searchResults)
     }else{

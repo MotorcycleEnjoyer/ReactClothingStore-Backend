@@ -4,7 +4,7 @@ const uuidv4 = require('uuid').v4
 const url = require("url")
 const blockedCharacters = new RegExp("[~`!@#$%^&()_={}\\[\\]\\:;,\\.\\/<>\\\\*\\-+\\?]")
 
-function isOnlyNumbersAndLetters(value){
+function hasOnlyNumbersAndLetters(value){
     if(blockedCharacters.test(value)){
         console.log("INVALID REGEX CHARS SPOTTED") 
         return false
@@ -204,6 +204,6 @@ function validateDataGiven(productId, dataObject, amount){
 module.exports = 
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
-    createLoggedInUserSession, isOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
+    createLoggedInUserSession, hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
     validateDataGiven, editItemInCart
     }
