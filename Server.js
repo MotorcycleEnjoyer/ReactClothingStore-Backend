@@ -68,7 +68,7 @@ app.get('/p/*/id/*', function(req,res){
 
 app.post('/suggestions', function(req,res){
     let phrase = req.body.searchTerm
-    if(helper.isOnlyNumbersAndLetters(phrase)){
+    if(helper.hasOnlyNumbersAndLetters(phrase)){
         let searchSuggestions = helper.findSearchSuggestions(phrase)
         return res.send(searchSuggestions)
     }else{
@@ -99,7 +99,7 @@ app.post('/addToCart', function(req,res){
             return res.status(200).send("ok")
         }
     }else{
-        return res.status(200).send("Could not add to cart. Reason: Invalid data provided.")
+        return res.status(200).send("POST/addToCart: Could not add to cart. Reason: Invalid data provided.")
     }
     
 })
