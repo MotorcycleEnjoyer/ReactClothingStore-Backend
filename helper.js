@@ -192,7 +192,7 @@ function validateDataGiven(productId, dataObject, amount){
     }
     let color = dataObject.color
     let product = getProductFromProductDatabase("NONE", productId)
-    if(product.colorOptions.indexOf(color) === -1){
+    if(product.details.colorOptions.indexOf(color) === -1){
         console.error(`The color "${color}" is invalid option for product: "${product.name}"`)
         return false
     }
