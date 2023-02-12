@@ -123,7 +123,7 @@ function editItemInCart(cart, productId, userData){
     if(index === -1){
         return false
     }else{
-        cart[index] = {...cart[index], ...userData}
+        cart[index] = {...cart[index], userSelectedParamers: {...userData}}
         return true
     }
 }
@@ -134,7 +134,7 @@ function getIndexOfItemInCart(cart, productId, userData){
             let categories = Object.keys(userData)
             let allMatch = true
             for(key of categories){
-                if(userData[key] !== item.details[key])
+                if(userData[key] !== item.userSelectedParamers[key])
                 {
                     allMatch = false
                 }
