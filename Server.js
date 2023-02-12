@@ -94,7 +94,7 @@ app.post('/addToCart', function(req,res){
             return res.status(200).send("ok")
         }else{
             let tempObject = helper.getProductFromProductDatabase("NoName", productId)
-            tempObject = {...tempObject, ...data, amount: parseInt(amount)}
+            tempObject = {...tempObject, userSelectedParameters: {...data}, amount: parseInt(amount)}
             shoppingCartFunctions.addToCart(myCart, tempObject)
             return res.status(200).send("ok")
         }

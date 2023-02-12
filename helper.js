@@ -57,11 +57,11 @@ function getProductFromProductDatabase(productName, productId){
     if(productId === undefined){
         let regex = genRegex(productName)
         const products = Array.from(
-            limitedArrayPull(dummyProductDB.db, i => i.name.match(regex), 10)
+            limitedArrayPull(dummyProductDB.db, i => i.details.name.match(regex), 10)
         )
         return(products)
     }else{
-        return dummyProductDB.db.filter(item => item.id === productId)[0]
+        return dummyProductDB.db.filter(item => item.details.id === productId)[0]
     }
 }
 
@@ -130,11 +130,11 @@ function editItemInCart(cart, productId, userData){
 
 function getIndexOfItemInCart(cart, productId, userData){
     const index = cart.findIndex(item => {
-        if(item.id === productId){
+        if(item.details.id === productId){
             let categories = Object.keys(userData)
             let allMatch = true
             for(key of categories){
-                if(userData[key] !== item[key])
+                if(userData[key] !== item.details[key])
                 {
                     allMatch = false
                 }
