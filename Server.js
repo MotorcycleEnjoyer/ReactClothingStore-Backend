@@ -124,6 +124,27 @@ app.post('/editCartItem', (req, res) => {
     }
 })
 
+app.post('/deleteCartItem', (req, res) => {
+    const sessionId = helper.cookieChecker(req.headers.cookie)
+    if(sessionId === undefined){
+        return res.send("POST/deleteCartItem: Invalid cookie.")
+    }
+    
+    const {indexOfCartItem} = req.body
+
+    let myCart = fetchAnonymousShoppingCart(sessionId).shoppingCart
+    if(myCart === undefined){
+        return res.status(200).send("POST/deleteCartItem: Cart is not defined.")
+    }
+    if(indexOfCartItem < 0 || indexOfCartItem >= myCart.length){
+        return res.status(200).send("POST/deleteCartItem: Invalid Data.")
+    }
+    console.log(fetchAnonymousShoppingCart(sessionId))
+    helper.deleteItemFromCart(myCart, indexOfCartItem)
+    console.log(fetchAnonymousShoppingCart(sessionId))
+    res.send(fetchAnonymousShoppingCart(sessionId))
+})
+
 app.post('/login', (req, res) => {
     const { username, password } = req.body
     const storedCreds = userCredentials.find((item) => item.user === username )
