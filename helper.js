@@ -128,6 +128,10 @@ function editItemInCart(cart, productId, userData){
     }
 }
 
+function deleteItemFromCart(cart, indexInCart){
+    cart = cart.splice(indexInCart, 1)
+}
+
 function getIndexOfItemInCart(cart, productId, userData){
     const index = cart.findIndex(item => {
         if(item.details.id === productId){
@@ -205,5 +209,5 @@ module.exports =
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
     createLoggedInUserSession, hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
-    validateDataGiven, editItemInCart
+    validateDataGiven, editItemInCart, deleteItemFromCart,
     }
