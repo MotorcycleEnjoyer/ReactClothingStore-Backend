@@ -91,12 +91,12 @@ app.post('/addToCart', function(req,res){
         }
         let addedToExistingProductInCart = helper.incrementAmountOfExistingCartItem(myCart, productId, data, amount)
         if(addedToExistingProductInCart){
-            return res.status(200).send("ok")
+            return res.status(200).send("Added to existing cart item.")
         }else{
             let tempObject = helper.getProductFromProductDatabase("NoName", productId)
             tempObject = {...tempObject, userSelectedParameters: {...data}, amount: parseInt(amount)}
             shoppingCartFunctions.addToCart(myCart, tempObject)
-            return res.status(200).send("ok")
+            return res.status(200).send("Added to cart.")
         }
     }else{
         return res.status(200).send("POST/addToCart: Could not add to cart. Reason: Invalid data provided.")
