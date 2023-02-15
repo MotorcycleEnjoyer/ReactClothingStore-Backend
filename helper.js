@@ -118,12 +118,12 @@ function createLoggedInUserSession(sessions, user){
     return sessionId
 }
 
-function editItemInCart(cart, productId, userData){
-    let index = getIndexOfItemInCart(cart, productId, userData)
+function editItemInCart(cart, productId, newData, oldData, amount){
+    let index = getIndexOfItemInCart(cart, productId, oldData)
     if(index === -1){
         return false
     }else{
-        cart[index] = {...cart[index], userSelectedParameters: {...userData}}
+        cart[index] = {...cart[index], userSelectedParameters: {...newData}, amount: amount}
         return true
     }
 }

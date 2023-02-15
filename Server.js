@@ -109,11 +109,17 @@ app.post('/editCartItem', (req, res) => {
     if(sessionId === undefined)
         res.send("POST/editCartItem: Invalid cookie.")
 
-    const {productId, data, amount } = req.body
+    const {productId, data, oldData, amount } = req.body
     let validDataGiven = helper.validateDataGiven(productId, data, amount)
+    let validOldData = helper.validateDataGiven(productId, oldData, amount)
 
-    if(validDataGiven){
-        let editSucceeded = helper.editItemInCart(productId, data, amount)
+
+    if(validDataGiven && validOldData){
+        let myCart = allShoppingCarts[sessionId].shoppingCart
+        if(myCart === undefined){
+            return res.status(200).send("POST/addToCart: Cart is not defined.")
+        }
+        let editSucceeded = helper.editItemInCart(myCart, productId, data, oldData, amount)
         if(editSucceeded){
             res.send("POST/editCartItem: Success")
         }else{
