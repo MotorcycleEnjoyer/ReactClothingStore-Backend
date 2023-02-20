@@ -52,12 +52,15 @@ app.get('/s', function(req,res){
 })
 
 app.get('/p/*/id/*', function(req,res){
+
+    let productId = helper.getProductIdFromUrl(req.url)
+    let searchResults = helper.getProductFromProductDatabase("NoName", productId)
+    return res.send(searchResults)
+
     rateLimiter.consume(req.headers.cookie, 2) // consume 2 points
       .then((rateLimiterRes) => {
         // 2 points consumed
-        let productId = helper.getProductIdFromUrl(req.url)
-        let searchResults = helper.getProductFromProductDatabase("NoName", productId)
-        return res.send(searchResults)
+        
       })
       .catch((rateLimiterRes) => {
         // Not enough points to consume
@@ -117,16 +120,16 @@ app.post('/editCartItem', (req, res) => {
     if(validDataGiven && validOldData){
         let myCart = allShoppingCarts[sessionId].shoppingCart
         if(myCart === undefined){
-            return res.status(200).send("POST/addToCart: Cart is not defined.")
+            return res.status(500).send("Cart not found.")
         }
         let editSucceeded = helper.editItemInCart(myCart, productId, data, oldData, amount)
         if(editSucceeded){
-            res.send("POST/editCartItem: Success")
+            res.status(200).send("Edit Successful.")
         }else{
-            res.send("POST/editCartItem: Failure")
+            res.status(500).send("Failed to add to cart")
         }
     }else{
-        res.send("POST/editCartItem: Invalid data.")
+        res.send("Invalid data.")
     }
 })
 
