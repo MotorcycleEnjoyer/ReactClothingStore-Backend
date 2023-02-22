@@ -209,5 +209,5 @@ module.exports =
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
     createLoggedInUserSession, hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
-    validateDataGiven, editItemInCart, deleteItemFromCart,
+    validateDataGiven, editItemInCart, deleteItemFromCart, getIndexOfItemInCart
     }
