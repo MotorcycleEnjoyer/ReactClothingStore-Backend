@@ -164,6 +164,18 @@ function incrementAmountOfExistingCartItem(cart, productId, userData, amount){
     }
 }
 
+function setAmountOfExistingCartItem(cart, productId, userData, amount){
+    let index = getIndexOfItemInCart(cart, productId, userData)
+
+    if(index === -1){
+        return false
+    }
+    else{
+        cart[index].amount = parseInt(amount)
+        return true
+    }
+}
+
 function validateDataGiven(productId, dataObject, amount){
 /*     let dataKeys = Object.keys(dataObject)
     for(key of dataKeys){
@@ -209,5 +221,6 @@ module.exports =
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
     createLoggedInUserSession, hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
-    validateDataGiven, editItemInCart, deleteItemFromCart, getIndexOfItemInCart
+    validateDataGiven, editItemInCart, deleteItemFromCart, getIndexOfItemInCart,
+    setAmountOfExistingCartItem
     }
