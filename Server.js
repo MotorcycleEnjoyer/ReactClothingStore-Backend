@@ -42,6 +42,7 @@ app.get("/shoppingCart", (req, res) => {
 
 app.get('/s', function(req,res){
     let query = helper.getQueryFromUrl(req.url)
+    console.log(query)
     if(helper.hasOnlyNumbersAndLetters(query)){
         let searchResults = helper.getProductFromProductDatabase(query)
         return res.send(searchResults)
@@ -122,19 +123,37 @@ app.post('/editCartItem', (req, res) => {
         if(myCart === undefined){
             return res.status(500).send("Cart not found.")
         }
-        let addedToExistingProductInCart = helper.incrementAmountOfExistingCartItem(myCart, productId, data, amount)
-        if(addedToExistingProductInCart){
-            helper.deleteItemFromCart(myCart, helper.getIndexOfItemInCart(myCart, productId, oldData))  
-            res.status(200).send("Incremented existing item.")
-        }else{
-            let editSucceeded = helper.editItemInCart(myCart, productId, data, oldData, amount)
-            if(editSucceeded){
-                res.status(200).send("Edit Successful.")
-            }else{
-                res.status(500).send("Failed to add to cart")
+
+        let categories = Object.keys(oldData)
+        let allMatch = true
+        for(key of categories){
+            if(data[key] !== oldData[key])
+            {
+                allMatch = false
             }
         }
-        
+
+        let editSucceeded = false
+        if(allMatch){
+            editSucceeded = helper.setAmountOfExistingCartItem(myCart, productId, data, amount)
+        }else{
+            let index = helper.getIndexOfItemInCart(myCart, productId, data)
+            if(index === -1){
+                let tempObject = helper.getProductFromProductDatabase("NoName", productId)
+                tempObject = {...tempObject, userSelectedParameters: {...data}, amount: parseInt(amount)}
+                shoppingCartFunctions.addToCart(myCart, tempObject)
+                helper.deleteItemFromCart(myCart, helper.getIndexOfItemInCart(myCart, productId, oldData))
+                return res.status(200).send("Added to cart.")
+            }else{
+                editSucceeded = helper.incrementAmountOfExistingCartItem(myCart, productId, data, amount)
+                helper.deleteItemFromCart(myCart, helper.getIndexOfItemInCart(myCart, productId, oldData))
+            }
+        }
+        if(editSucceeded){
+            res.status(200).send("Edit Successful.")
+        }else{
+            res.status(500).send("Failed to add to cart")
+        }
     }else{
         res.send("Invalid data.")
     }
