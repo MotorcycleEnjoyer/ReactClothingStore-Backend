@@ -4,7 +4,6 @@ const uuidv4 = require('uuid').v4
 const bcrypt = require('bcrypt')
 const saltRounds = 12
 const fs = require("fs")
-const shoppingCartFunctions = require('./Shopping')
 const cors = require("cors")
 const helper = require("./helper")
 const { RateLimiterMemory } = require('rate-limiter-flexible');
@@ -86,24 +85,22 @@ app.post('/addToCart', function(req,res){
         res.send("POST/addToCart: Invalid cookie.")
 
     const {productId, data, amount } = req.body
-    let validDataGiven = helper.validateDataGiven(productId, data, amount)
     
-    if(validDataGiven){
+    if(helper.validateDataGiven(productId, data, amount)){
         let myCart = allShoppingCarts[sessionId].shoppingCart
         if(myCart === undefined){
-            return res.status(200).send("POST/addToCart: Cart is not defined.")
+            return res.status(200).send("Cart is not defined.")
         }
         let addedToExistingProductInCart = helper.incrementAmountOfExistingCartItem(myCart, productId, data, amount)
         if(addedToExistingProductInCart){
             return res.status(200).send("Added to existing cart item.")
         }else{
-            let tempObject = helper.getProductFromProductDatabase("NoName", productId)
-            tempObject = {...tempObject, userSelectedParameters: {...data}, amount: parseInt(amount)}
-            shoppingCartFunctions.addToCart(myCart, tempObject)
+            let tempObject = helper.createNewObject(productId, data, amount)
+            myCart.push(tempObject)
             return res.status(200).send("Added to cart.")
         }
     }else{
-        return res.status(200).send("POST/addToCart: Could not add to cart. Reason: Invalid data provided.")
+        return res.status(200).send("Invalid data provided.")
     }
     
 })
@@ -114,9 +111,10 @@ app.post('/editCartItem', (req, res) => {
         res.send("POST/editCartItem: Invalid cookie.")
 
     const {productId, data, oldData, amount } = req.body
-    let validDataGiven = helper.validateDataGiven(productId, data, amount)
-    let validOldData = helper.validateDataGiven(productId, oldData, amount)
-    if(validDataGiven && validOldData){
+    if( 
+        helper.validateDataGiven(productId, data, amount) && 
+        helper.validateDataGiven(productId, oldData, amount)
+    ){
         const myCart = allShoppingCarts[sessionId].shoppingCart
         if(myCart === undefined){
             return res.status(500).send("Cart not found.")
@@ -143,9 +141,7 @@ app.post('/deleteCartItem', (req, res) => {
     if(indexOfCartItem < 0 || indexOfCartItem >= myCart.length){
         return res.status(200).send("POST/deleteCartItem: Invalid Data.")
     }
-    console.log(fetchAnonymousShoppingCart(sessionId))
     helper.deleteItemFromCart(myCart, indexOfCartItem)
-    console.log(fetchAnonymousShoppingCart(sessionId))
     res.send(fetchAnonymousShoppingCart(sessionId))
 })
 
@@ -200,7 +196,7 @@ app.post("/register", (req,res) => {
             }
             userCredentials.push({user: username, pass: hash})
             let sessionId = helper.createLoggedInUserSession(sessions, username)
-            allShoppingCarts[sessionId] = {type: "user", id: sessions[sessionId].userId, shoppingCart: [shoppingCartFunctions.dummyProduct]}    
+            allShoppingCarts[sessionId] = {type: "user", id: sessions[sessionId].userId, shoppingCart: []}    
             deleteTempUserCart(req.headers.cookie.split("=")[1])
             deleteOldSession(req.headers.cookie.split("=")[1])
             saveUserCredentials()
