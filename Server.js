@@ -116,46 +116,15 @@ app.post('/editCartItem', (req, res) => {
     const {productId, data, oldData, amount } = req.body
     let validDataGiven = helper.validateDataGiven(productId, data, amount)
     let validOldData = helper.validateDataGiven(productId, oldData, amount)
-
-
     if(validDataGiven && validOldData){
-        let myCart = allShoppingCarts[sessionId].shoppingCart
+        const myCart = allShoppingCarts[sessionId].shoppingCart
         if(myCart === undefined){
             return res.status(500).send("Cart not found.")
         }
-
-        let categories = Object.keys(oldData)
-        let allMatch = true
-        for(key of categories){
-            if(data[key] !== oldData[key])
-            {
-                allMatch = false
-            }
-        }
-
-        let editSucceeded = false
-        if(allMatch){
-            editSucceeded = helper.setAmountOfExistingCartItem(myCart, productId, data, amount)
-        }else{
-            let index = helper.getIndexOfItemInCart(myCart, productId, data)
-            if(index === -1){
-                let tempObject = helper.getProductFromProductDatabase("NoName", productId)
-                tempObject = {...tempObject, userSelectedParameters: {...data}, amount: parseInt(amount)}
-                shoppingCartFunctions.addToCart(myCart, tempObject)
-                helper.deleteItemFromCart(myCart, helper.getIndexOfItemInCart(myCart, productId, oldData))
-                return res.status(200).send("Added to cart.")
-            }else{
-                editSucceeded = helper.incrementAmountOfExistingCartItem(myCart, productId, data, amount)
-                helper.deleteItemFromCart(myCart, helper.getIndexOfItemInCart(myCart, productId, oldData))
-            }
-        }
-        if(editSucceeded){
-            res.status(200).send("Edit Successful.")
-        }else{
-            res.status(500).send("Failed to add to cart")
-        }
+        const status = helper.editFunction(myCart, productId, data, oldData, amount)
+        return res.status(200).send(status)
     }else{
-        res.send("Invalid data.")
+        return res.status(200).send("Invalid Data!")
     }
 })
 
