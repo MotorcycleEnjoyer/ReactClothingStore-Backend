@@ -13,6 +13,18 @@ function hasOnlyNumbersAndLetters(value){
     }
 }
 
+function areIdentical(oldData, newData){
+    let categories = Object.keys(oldData)
+    let allMatch = true
+    for(key of categories){
+        if(newData[key] !== oldData[key])
+        {
+            allMatch = false
+        }
+    }    
+    return allMatch
+}
+
 function genRegex(searchTerm)
 {   
     let regex
@@ -135,14 +147,7 @@ function deleteItemFromCart(cart, indexInCart){
 function getIndexOfItemInCart(cart, productId, userData){
     const index = cart.findIndex(item => {
         if(item.details.id === productId){
-            let categories = Object.keys(userData)
-            let allMatch = true
-            for(key of categories){
-                if(userData[key] !== item.userSelectedParameters[key])
-                {
-                    allMatch = false
-                }
-            }
+            let allMatch = areIdentical(item.userSelectedParameters, userData)
             if(allMatch){
                 return item
             } 
@@ -173,6 +178,36 @@ function setAmountOfExistingCartItem(cart, productId, userData, amount){
     else{
         cart[index].amount = parseInt(amount)
         return true
+    }
+}
+
+function addToCart(cart, item){
+    cart.push(item)
+}
+
+function createNewObject(productId, data, amount){
+    let tempObject = getProductFromProductDatabase("NoName", productId)
+    tempObject = {...tempObject, userSelectedParameters: {...data}, amount: parseInt(amount)}
+    return tempObject
+}
+
+function editFunction(myCart, productId, newData, oldData, amount){
+    if(areIdentical(oldData, newData)){
+        setAmountOfExistingCartItem(myCart, productId, newData, amount )
+        return "Edit completed"
+    }else{
+        if(getIndexOfItemInCart(myCart, productId, newData) === -1){
+            // If cartItem doesn't exist, push a new one
+            let tempObject = createNewObject(productId, newData, amount)
+            addToCart(myCart, tempObject)
+            deleteItemFromCart(myCart, getIndexOfItemInCart(myCart, productId, oldData))
+            return "Added to Cart"
+        }else{
+            // Otherwise Increment the existing one, and delete the old one.
+            incrementAmountOfExistingCartItem(myCart, productId, newData, amount)
+            deleteItemFromCart(myCart, getIndexOfItemInCart(myCart, productId, oldData))
+            return "Added to Existing Item"
+        }
     }
 }
 
@@ -221,6 +256,5 @@ module.exports =
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
     createLoggedInUserSession, hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
-    validateDataGiven, editItemInCart, deleteItemFromCart, getIndexOfItemInCart,
-    setAmountOfExistingCartItem
+    validateDataGiven, editItemInCart, deleteItemFromCart, editFunction, createNewObject,
     }
