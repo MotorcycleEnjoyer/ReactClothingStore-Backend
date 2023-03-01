@@ -93,10 +93,12 @@ app.post('/addToCart', function(req,res){
         }
         let addedToExistingProductInCart = helper.incrementAmountOfExistingCartItem(myCart, productId, data, amount)
         if(addedToExistingProductInCart){
+            saveShoppingCarts();
             return res.status(200).send("Added to existing cart item.")
         }else{
             let tempObject = helper.createNewObject(productId, data, amount)
             myCart.push(tempObject)
+            saveShoppingCarts();
             return res.status(200).send("Added to cart.")
         }
     }else{
@@ -120,6 +122,7 @@ app.post('/editCartItem', (req, res) => {
             return res.status(500).send("Cart not found.")
         }
         const status = helper.editFunction(myCart, productId, data, oldData, amount)
+        saveShoppingCarts()
         return res.status(200).send(fetchAnonymousShoppingCart(sessionId))
     }else{
         return res.status(200).send("Invalid Data!")
@@ -142,6 +145,7 @@ app.post('/deleteCartItem', (req, res) => {
         return res.status(200).send("POST/deleteCartItem: Invalid Data.")
     }
     helper.deleteItemFromCart(myCart, indexOfCartItem)
+    saveShoppingCarts()
     res.send(fetchAnonymousShoppingCart(sessionId))
 })
 
