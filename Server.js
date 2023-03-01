@@ -120,7 +120,7 @@ app.post('/editCartItem', (req, res) => {
             return res.status(500).send("Cart not found.")
         }
         const status = helper.editFunction(myCart, productId, data, oldData, amount)
-        return res.status(200).send(status)
+        return res.status(200).send(fetchAnonymousShoppingCart(sessionId))
     }else{
         return res.status(200).send("Invalid Data!")
     }
