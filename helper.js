@@ -90,11 +90,11 @@ function cookieChecker(cookie){
 }
 
 function createAnonymousSession(sessionId, sessionStorage){
-    sessionStorage[sessionId] = {type: "anonymous-User"}
+    sessionStorage[sessionId] = {type: "anonymous"}
 }
 
 function createAnonymousShoppingCart(session, shoppingCartStorage){
-    shoppingCartStorage[session] = {type: "anonymous-User", shoppingCart: []}
+    shoppingCartStorage.anonymousCarts[session] = {type: "anonymous", shoppingCart: []}
 }
 
 function getQueryFromUrl(urlData){
@@ -124,9 +124,9 @@ function checkIfUserIsLoggedIn(arr, sessions, username){
     return isLoggedIn
 }
 
-function createLoggedInUserSession(sessions, user){
+function createLoggedInUserSession(sessions, cartId){
     const sessionId = uuidv4();
-    sessions[sessionId] = { type:"user", username: user, userId: 1}
+    sessions[sessionId] = { type:"user", cartId: cartId}
     return sessionId
 }
 
