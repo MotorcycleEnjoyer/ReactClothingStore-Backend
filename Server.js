@@ -27,16 +27,16 @@ app.use(express.json())
 let sessions, userCredentials, allShoppingCarts
 
 app.get("/shoppingCart", (req, res) => {
-    const userSession = userIsLoggedIn(req.headers.cookie)
-    if(userSession === undefined || !userSession){
-        const temporaryUserId = uuidv4();
+    const sessionId = getSession(req.headers.cookie)
+    if(sessionId === undefined || !sessionId){
+        const temporaryUserId = uuidv4()
         helper.createAnonymousSession(temporaryUserId, sessions)
         helper.createAnonymousShoppingCart(temporaryUserId, allShoppingCarts)
         saveSessions(); saveShoppingCarts();        
         res.set('Set-Cookie', `session=${temporaryUserId}`)
-        return res.send(fetchAnonymousShoppingCart(temporaryUserId))
+        return res.send(getShoppingCart(temporaryUserId))
     }
-    res.send(fetchAnonymousShoppingCart(req.headers.cookie.split("=")[1]))
+    res.send(getShoppingCart(sessionId))
 })
 
 app.get('/s', function(req,res){
@@ -87,19 +87,19 @@ app.post('/addToCart', function(req,res){
     const {productId, data, amount } = req.body
     
     if(helper.validateDataGiven(productId, data, amount)){
-        let myCart = allShoppingCarts[sessionId].shoppingCart
+        let myCart = getShoppingCart(sessionId).shoppingCart
         if(myCart === undefined){
             return res.status(200).send("Cart is not defined.")
         }
         let addedToExistingProductInCart = helper.incrementAmountOfExistingCartItem(myCart, productId, data, amount)
         if(addedToExistingProductInCart){
             saveShoppingCarts();
-            return res.status(200).send(fetchAnonymousShoppingCart(sessionId))
+            return res.status(200).send(getShoppingCart(sessionId))
         }else{
             let tempObject = helper.createNewObject(productId, data, amount)
             myCart.push(tempObject)
             saveShoppingCarts();
-            return res.status(200).send(fetchAnonymousShoppingCart(sessionId))
+            return res.status(200).send(getShoppingCart(sessionId))
         }
     }else{
         return res.status(200).send("Invalid data provided.")
@@ -108,7 +108,7 @@ app.post('/addToCart', function(req,res){
 })
 
 app.post('/editCartItem', (req, res) => {
-    const sessionId = helper.cookieChecker(req.headers.cookie)
+    const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
         res.send("POST/editCartItem: Invalid cookie.")
 
@@ -117,27 +117,27 @@ app.post('/editCartItem', (req, res) => {
         helper.validateDataGiven(productId, data, amount) && 
         helper.validateDataGiven(productId, oldData, amount)
     ){
-        const myCart = allShoppingCarts[sessionId].shoppingCart
+        const myCart = getShoppingCart(sessionId).shoppingCart
         if(myCart === undefined){
             return res.status(500).send("Cart not found.")
         }
         const status = helper.editFunction(myCart, productId, data, oldData, amount)
         saveShoppingCarts()
-        return res.status(200).send(fetchAnonymousShoppingCart(sessionId))
+        return res.status(200).send(getShoppingCart(sessionId))
     }else{
         return res.status(200).send("Invalid Data!")
     }
 })
 
 app.post('/deleteCartItem', (req, res) => {
-    const sessionId = helper.cookieChecker(req.headers.cookie)
+    const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined){
         return res.send("POST/deleteCartItem: Invalid cookie.")
     }
     
     const {indexOfCartItem} = req.body
 
-    let myCart = fetchAnonymousShoppingCart(sessionId).shoppingCart
+    let myCart = getShoppingCart(sessionId).shoppingCart
     if(myCart === undefined){
         return res.status(200).send("POST/deleteCartItem: Cart is not defined.")
     }
@@ -146,7 +146,7 @@ app.post('/deleteCartItem', (req, res) => {
     }
     helper.deleteItemFromCart(myCart, indexOfCartItem)
     saveShoppingCarts()
-    res.send(fetchAnonymousShoppingCart(sessionId))
+    res.send(getShoppingCart(sessionId))
 })
 
 app.post('/login', (req, res) => {
@@ -166,15 +166,15 @@ app.post('/login', (req, res) => {
             let arr = Object.keys(sessions)
             let isAlreadyLoggedIn = helper.checkIfUserIsLoggedIn(arr, sessions, username)
             if(isAlreadyLoggedIn){
-                res.status(401)
-                res.send("POST/login: Already logged in!")
+                res.status(401).send("POST/login: Already logged in!")
             }
             if(!isAlreadyLoggedIn){
                 // delete temp Anonymous cookie, and cart
                 deleteOldSession(req.headers.cookie.split("=")[1])
                 deleteTempUserCart(req.headers.cookie.split("=")[1])
-                const sessionId = helper.createLoggedInUserSession(sessions, username)
-                allShoppingCarts[sessionId] = {type: "user", id: sessions[sessionId].userId, shoppingCart: []}
+                const cartId = storedCreds.cartId
+                const sessionId = helper.createLoggedInUserSession(sessions, cartId)
+
                 saveSessions(); saveShoppingCarts();
                 res.set('Set-Cookie', `session=${sessionId}`)
                 res.status(200).send("POST/login: Logged in successfuly!")
@@ -189,6 +189,9 @@ app.post('/login', (req, res) => {
 
 app.post("/register", (req,res) => {
     const { username, password } = req.body
+    if(username === undefined || password === undefined){
+        return res.status(500).send("Error creating account.")
+    }
     bcrypt.genSalt(saltRounds, function(err, salt) {
         if(err){
             console.log(err)
@@ -199,13 +202,13 @@ app.post("/register", (req,res) => {
                 console.log(err)
                 return res.status(500).send("Error creating account.")
             }
-            userCredentials.push({user: username, pass: hash})
-            let sessionId = helper.createLoggedInUserSession(sessions, username)
-            allShoppingCarts[sessionId] = {type: "user", id: sessions[sessionId].userId, shoppingCart: []}    
+            const cartId = uuidv4()
+            userCredentials.push({user: username, pass: hash, cartId: cartId})
+            const sessionId = helper.createLoggedInUserSession(sessions, cartId)
+            allShoppingCarts.loggedInCarts[cartId] = {type: "user", shoppingCart: []}    
             deleteTempUserCart(req.headers.cookie.split("=")[1])
             deleteOldSession(req.headers.cookie.split("=")[1])
-            saveUserCredentials()
-            saveSessions()
+            saveUserCredentials(); saveSessions(); saveShoppingCarts();
             res.set('Set-Cookie', `session=${sessionId}`)
             res.status(200).send("POST/register: Registered Successfully!")
         })
@@ -232,7 +235,7 @@ app.get("*", (req, res) =>{
     res.send(`<h1>Error 404, page not found</h1>`)
 })
 
-function userIsLoggedIn(cookie){
+function getSession(cookie){
     if(cookie === undefined)
         return undefined
     let sessionId = cookie.split('=')[1]
@@ -241,7 +244,7 @@ function userIsLoggedIn(cookie){
         console.log("USER SESSION NOT FOUND")
         return undefined
     }
-    return userSession
+    return sessionId
 }
 
 function deleteOldSession(cookie){
@@ -250,12 +253,8 @@ function deleteOldSession(cookie){
 }
 
 function deleteTempUserCart(cookie){
-    delete allShoppingCarts[cookie]
+    delete allShoppingCarts.anonymousCarts[cookie]
     saveShoppingCarts()
-}
-    
-function fetchAnonymousShoppingCart(cookie){
-    return allShoppingCarts[cookie]
 }
 
 app.listen(5000, console.log("Running on port 5000"), async()=>{
@@ -263,6 +262,15 @@ app.listen(5000, console.log("Running on port 5000"), async()=>{
     sessions = await loadSessions()
     allShoppingCarts = await loadAllShoppingCarts()
 })
+
+function getShoppingCart(sessionId){
+    const sessionObj = sessions[sessionId]
+    if(sessionObj.type === "anonymous"){
+        return allShoppingCarts.anonymousCarts[sessionId]
+    }else{
+        return allShoppingCarts.loggedInCarts[sessionObj.cartId]
+    }
+}
 
 const loadFile = async (fileName) => {
     try{
@@ -284,7 +292,7 @@ async function loadCreds(){
     return userCredentials
 }
 async function loadAllShoppingCarts(){
-    let allShoppingCarts = await loadFile('shoppingCarts.json') || {}
+    let allShoppingCarts = await loadFile('shoppingCarts.json') || {"loggedInCarts": {}, "anonymousCarts": {}}
     return allShoppingCarts
 }
 
