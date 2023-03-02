@@ -94,12 +94,12 @@ app.post('/addToCart', function(req,res){
         let addedToExistingProductInCart = helper.incrementAmountOfExistingCartItem(myCart, productId, data, amount)
         if(addedToExistingProductInCart){
             saveShoppingCarts();
-            return res.status(200).send("Added to existing cart item.")
+            return res.status(200).send(fetchAnonymousShoppingCart(sessionId))
         }else{
             let tempObject = helper.createNewObject(productId, data, amount)
             myCart.push(tempObject)
             saveShoppingCarts();
-            return res.status(200).send("Added to cart.")
+            return res.status(200).send(fetchAnonymousShoppingCart(sessionId))
         }
     }else{
         return res.status(200).send("Invalid data provided.")
@@ -154,8 +154,7 @@ app.post('/login', (req, res) => {
     const storedCreds = userCredentials.find((item) => item.user === username )
     if(storedCreds === undefined){
         console.log("POST/login: bad creds")
-        res.status(200)
-        return res.send("POST/login: Incorrect credentials. Please try again")
+        return res.status(401).send("Incorrect credentials. Please try again")
     }
     
     bcrypt.compare(password, storedCreds.pass, (err, result) => {
@@ -167,21 +166,23 @@ app.post('/login', (req, res) => {
             let arr = Object.keys(sessions)
             let isAlreadyLoggedIn = helper.checkIfUserIsLoggedIn(arr, sessions, username)
             if(isAlreadyLoggedIn){
-                res.status(200)
+                res.status(401)
                 res.send("POST/login: Already logged in!")
             }
             if(!isAlreadyLoggedIn){
+                // delete temp Anonymous cookie, and cart
                 deleteOldSession(req.headers.cookie.split("=")[1])
                 deleteTempUserCart(req.headers.cookie.split("=")[1])
                 const sessionId = helper.createLoggedInUserSession(sessions, username)
-                saveSessions()
+                allShoppingCarts[sessionId] = {type: "user", id: sessions[sessionId].userId, shoppingCart: []}
+                saveSessions(); saveShoppingCarts();
                 res.set('Set-Cookie', `session=${sessionId}`)
-                res.send("POST/login: Logged in successfuly!")
+                res.status(200).send("POST/login: Logged in successfuly!")
             }
             
         }else{
             console.log("POST/login: bad creds BECAUSE BCRYPT FAILED")
-            return res.send("POST/login: Login failed.")
+            return res.status(401).send("Incorrect credentials. Please try again")
         }
     })
 })
@@ -191,12 +192,12 @@ app.post("/register", (req,res) => {
     bcrypt.genSalt(saltRounds, function(err, salt) {
         if(err){
             console.log(err)
-            return
+            return res.status(500).send("Error creating account.")
         }
         bcrypt.hash(password, salt, function(err, hash) {
             if(err){
                 console.log(err)
-                return
+                return res.status(500).send("Error creating account.")
             }
             userCredentials.push({user: username, pass: hash})
             let sessionId = helper.createLoggedInUserSession(sessions, username)
@@ -206,8 +207,7 @@ app.post("/register", (req,res) => {
             saveUserCredentials()
             saveSessions()
             res.set('Set-Cookie', `session=${sessionId}`)
-            res.status(200)
-            res.send("POST/register: Registered Successfully!")
+            res.status(200).send("POST/register: Registered Successfully!")
         })
     });
 })
