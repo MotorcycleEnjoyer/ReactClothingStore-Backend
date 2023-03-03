@@ -41,7 +41,6 @@ app.get("/shoppingCart", (req, res) => {
 
 app.get('/s', function(req,res){
     let query = helper.getQueryFromUrl(req.url)
-    console.log(query)
     if(helper.hasOnlyNumbersAndLetters(query)){
         let searchResults = helper.getProductFromProductDatabase(query)
         return res.send(searchResults)
@@ -121,7 +120,7 @@ app.post('/editCartItem', (req, res) => {
         if(myCart === undefined){
             return res.status(500).send("Cart not found.")
         }
-        const status = helper.editFunction(myCart, productId, data, oldData, amount)
+        helper.editFunction(myCart, productId, data, oldData, amount)
         saveShoppingCarts()
         return res.status(200).send(getShoppingCart(sessionId))
     }else{
