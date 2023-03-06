@@ -153,11 +153,12 @@ app.post('/clearCart', (req, res) => {
     if(sessionId === undefined){
         return res.send("Invalid cookie.")
     }
-    let myCart = getShoppingCart(sessionId).shoppingCart
+    let myCart = getShoppingCart(sessionId)
     if(myCart === undefined){
         return res.status(200).send("Cart is not defined.")
     }else{
-        myCart = []
+        myCart.shoppingCart = []
+        saveShoppingCarts()
         return res.status(200).send(getShoppingCart(sessionId))
     }
 })
