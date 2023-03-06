@@ -148,6 +148,20 @@ app.post('/deleteCartItem', (req, res) => {
     res.send(getShoppingCart(sessionId))
 })
 
+app.post('/clearCart', (req, res) => {
+    const sessionId = getSession(req.headers.cookie)
+    if(sessionId === undefined){
+        return res.send("Invalid cookie.")
+    }
+    let myCart = getShoppingCart(sessionId).shoppingCart
+    if(myCart === undefined){
+        return res.status(200).send("Cart is not defined.")
+    }else{
+        myCart = []
+        return res.status(200).send(getShoppingCart(sessionId))
+    }
+})
+
 app.post('/login', (req, res) => {
     const { username, password } = req.body
     const storedCreds = userCredentials.find((item) => item.user === username )
