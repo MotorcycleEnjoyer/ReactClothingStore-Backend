@@ -206,6 +206,9 @@ app.post("/register", (req,res) => {
     if(username === undefined || password === undefined){
         return res.status(500).send("Error creating account.")
     }
+    if(password.length < 8){
+        return res.status(500).send("Password must be at least 8 characters.")
+    }
     bcrypt.genSalt(saltRounds, function(err, salt) {
         if(err){
             console.log(err)
