@@ -209,27 +209,31 @@ app.post("/register", (req,res) => {
     if(password.length < 8){
         return res.status(500).send("Password must be at least 8 characters.")
     }
-    bcrypt.genSalt(saltRounds, function(err, salt) {
-        if(err){
-            console.log(err)
-            return res.status(500).send("Error creating account.")
-        }
-        bcrypt.hash(password, salt, function(err, hash) {
+    if(helper.userNameIsAvailable(username, userCredentials)){
+        bcrypt.genSalt(saltRounds, function(err, salt) {
             if(err){
                 console.log(err)
                 return res.status(500).send("Error creating account.")
             }
-            const cartId = uuidv4()
-            userCredentials.push({user: username, pass: hash, cartId: cartId})
-            const sessionId = helper.createLoggedInUserSession(sessions, cartId)
-            allShoppingCarts.loggedInCarts[cartId] = {type: "user", shoppingCart: []}    
-            deleteTempUserCart(req.headers.cookie.split("=")[1])
-            deleteOldSession(req.headers.cookie.split("=")[1])
-            saveUserCredentials(); saveSessions(); saveShoppingCarts();
-            res.set('Set-Cookie', `session=${sessionId}`)
-            res.status(200).send("POST/register: Registered Successfully!")
-        })
-    });
+            bcrypt.hash(password, salt, function(err, hash) {
+                if(err){
+                    console.log(err)
+                    return res.status(500).send("Error creating account.")
+                }
+                const cartId = uuidv4()
+                userCredentials.push({user: username, pass: hash, cartId: cartId})
+                const sessionId = helper.createLoggedInUserSession(sessions, cartId)
+                helper.createLoggedInCart(allShoppingCarts, cartId)    
+                deleteTempUserCart(req.headers.cookie.split("=")[1])
+                deleteOldSession(req.headers.cookie.split("=")[1])
+                saveUserCredentials(); saveSessions(); saveShoppingCarts();
+                res.set('Set-Cookie', `session=${sessionId}`)
+                res.status(200).send("POST/register: Registered Successfully!")
+            })
+        });
+    }else{
+        return res.status(500).send("Username is taken.")
+    }
 })
 
 app.post('/logout', (req,res) => {

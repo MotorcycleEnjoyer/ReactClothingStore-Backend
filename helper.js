@@ -130,6 +130,10 @@ function createLoggedInUserSession(sessions, cartId){
     return sessionId
 }
 
+function createLoggedInCart(allShoppingCarts, cartId){
+    allShoppingCarts.loggedInCarts[cartId] = {type: "user", shoppingCart: []}
+}
+
 function editItemInCart(cart, productId, newData, oldData, amount){
     let index = getIndexOfItemInCart(cart, productId, oldData)
     if(index === -1){
@@ -252,9 +256,19 @@ function validateDataGiven(productId, dataObject, amount){
     return true
 }
 
+function userNameIsAvailable(name, allCredentials){
+    const index = allCredentials.findIndex((item) => {
+        console.log(item.user, name)
+        return item.user === name
+    })
+    console.log(index)
+    return index === -1
+}
+
 module.exports = 
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
     createLoggedInUserSession, hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
     validateDataGiven, editItemInCart, deleteItemFromCart, editFunction, createNewObject,
+    createLoggedInCart, userNameIsAvailable
     }
