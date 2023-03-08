@@ -165,6 +165,12 @@ app.post('/clearCart', (req, res) => {
 
 app.post('/login', (req, res) => {
     const { username, password } = req.body
+    if(username === undefined || password === undefined){
+        return res.status(500).send("Login Error.")
+    }
+    if(username.length > 30 || password.length > 30){
+        return res.status(500).send("Login Error")
+    }
     const storedCreds = userCredentials.find((item) => item.user === username )
     if(storedCreds === undefined){
         console.log("POST/login: bad creds")
@@ -208,6 +214,9 @@ app.post("/register", (req,res) => {
     }
     if(password.length < 8){
         return res.status(500).send("Password must be at least 8 characters.")
+    }
+    if(password.length > 30 || username.length > 30){
+        return res.status(500).send("Error creating account.")
     }
     if(helper.userNameIsAvailable(username, userCredentials)){
         bcrypt.genSalt(saltRounds, function(err, salt) {
