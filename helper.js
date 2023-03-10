@@ -1,5 +1,4 @@
 const dummyProductDB = require('./dummyProductDB')
-const suggestionDB = require("./Suggestions")
 const uuidv4 = require('uuid').v4
 const url = require("url")
 const blockedCharacters = new RegExp("[~`!@#$%^&()_={}\\[\\]\\:;,\\.\\/<>\\\\*\\-+\\?]")
@@ -58,7 +57,7 @@ function findSearchSuggestions(searchTerm){
     let regex = genRegex(searchTerm)
 
     const suggestions = Array.from(
-        limitedArrayPull(suggestionDB, i => i.match(regex), 10)
+        limitedArrayPull(dummyProductDB.suggestions, i => i.match(regex), 10)
     )
 
     console.log(suggestions)
