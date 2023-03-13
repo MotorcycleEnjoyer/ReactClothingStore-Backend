@@ -74,6 +74,10 @@ app.get('/p/*/id/*', function(req,res){
 
 app.post('/suggestions', function(req,res){
     let phrase = req.body.searchTerm
+    if(phrase === undefined || phrase.length > 50)
+    {
+        return res.status(500).send("Invalid Query")
+    }
     if(helper.hasOnlyNumbersAndLetters(phrase)){
         let searchSuggestions = helper.findSearchSuggestions(phrase)
         return res.send(searchSuggestions)
