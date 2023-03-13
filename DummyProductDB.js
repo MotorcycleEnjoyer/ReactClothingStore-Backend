@@ -1,7 +1,7 @@
 const db = [
     {
         details: {
-            id: 1,
+            id: 0,
             name: "Generic T Shirt",
             manufacturerOrBrand: "T-Shirt-CO",
             typeOfClothing: "T-Shirt",
@@ -21,7 +21,7 @@ const db = [
     },
     {
         details: {
-            id: 2,
+            id: 1,
             name: "Specific T Shirt",
             manufacturerOrBrand: "Someone",
             typeOfClothing: "T-Shirt",
@@ -39,7 +39,7 @@ const db = [
     },
     {
         details: {
-            id: 3,
+            id: 2,
             name: "Some T Shirt",
             manufacturerOrBrand: "Someone",
             typeOfClothing: "T-Shirt",
