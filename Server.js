@@ -24,7 +24,7 @@ app.use(cors(corsOptions));
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
-let sessions, userCredentials, allShoppingCarts
+let sessions, userCredentials, allShoppingCarts, allRatings
 
 app.get("/shoppingCart", (req, res) => {
     const sessionId = getSession(req.headers.cookie)
@@ -273,6 +273,36 @@ app.get("*", (req, res) =>{
     res.send(`<h1>Error 404, page not found</h1>`)
 })
 
+app.post('/ratings', (req,res) => {
+    const {rating, id} = req.body
+    const sessionId = helper.cookieChecker(req.headers.cookie)
+    if(sessionId === undefined){
+        return res.send("Invalid cookie.")
+    }
+    if(sessions[sessionId].type === "user")
+    {
+        console.log(rating, id)
+        allRatings[id].push(rating)
+        saveRatings()
+        const totalRatingsCount = allRatings[id].reduce((accumulator, currentItem) => accumulator + currentItem, 0)
+        const averageRating = totalRatingsCount / allRatings[id].length
+        return res.send({averageRating: averageRating})
+    }else{
+        res.status(500)
+        return res.send("You are not logged in!")
+    }
+})
+
+app.post('/getRatings', (req, res) => {
+    const { id } = req.body
+    if(id === undefined){
+        return res.status(500).send("Invalid Query.")
+    }
+    const totalRatingsCount = allRatings[id].reduce((accumulator, currentItem) => accumulator + currentItem, 0)
+    const averageRating = totalRatingsCount / allRatings[id].length
+    res.status(200).send({averageRating: averageRating})
+})
+
 function getSession(cookie){
     if(cookie === undefined)
         return undefined
@@ -299,6 +329,7 @@ app.listen(5000, console.log("Running on port 5000"), async()=>{
     userCredentials = await loadCreds()
     sessions = await loadSessions()
     allShoppingCarts = await loadAllShoppingCarts()
+    allRatings = await loadAllRatings()
 })
 
 function getShoppingCart(sessionId){
@@ -333,6 +364,10 @@ async function loadAllShoppingCarts(){
     let allShoppingCarts = await loadFile('shoppingCarts.json') || {"loggedInCarts": {}, "anonymousCarts": {}}
     return allShoppingCarts
 }
+async function loadAllRatings(){
+    let allRatings = await loadFile('allRatings.json') || {"0": [], "1": [], "2": []}
+    return allRatings
+}
 
 function saveUserCredentials(){
     saveDataAsJSON('userCredentials.json', userCredentials)
@@ -344,6 +379,10 @@ function saveSessions(){
 
 function saveShoppingCarts(){
     saveDataAsJSON('shoppingCarts.json', allShoppingCarts)
+}
+
+function saveRatings(){
+    saveDataAsJSON('allRatings.json', allRatings)
 }
 
 async function saveDataAsJSON(fileName, sourceVariable){
