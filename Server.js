@@ -41,6 +41,10 @@ app.get("/shoppingCart", (req, res) => {
 
 app.get('/s', function(req,res){
     let query = helper.getQueryFromUrl(req.url)
+    if(query === undefined || query.length > 50){
+        return res.status(500).send("Invalid Query")
+    }
+        
     if(helper.hasOnlyNumbersAndLetters(query)){
         let searchResults = helper.getProductFromProductDatabase(query)
         return res.send(searchResults)
