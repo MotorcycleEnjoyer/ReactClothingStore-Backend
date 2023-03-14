@@ -269,5 +269,5 @@ module.exports =
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
     createLoggedInUserSession, hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
     validateDataGiven, editItemInCart, deleteItemFromCart, editFunction, createNewObject,
-    createLoggedInCart, userNameIsAvailable
+    createLoggedInCart, userNameIsAvailable, limitedArrayPull
     }
