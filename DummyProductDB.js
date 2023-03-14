@@ -31,7 +31,7 @@ const db = [
                     pink: 2
             },
             weight: {grams: 50},
-            price: 5.99,
+            price: 10.99,
             materials: {polyester: "50%", cotton: "50%"},
         },
         userSelectedParameters: {},
@@ -51,7 +51,7 @@ const db = [
                     pink: 2
             },
             weight: {grams: 50},
-            price: 5.99,
+            price: 3.99,
             materials: {polyester: "50%", cotton: "50%"},
         },
         userSelectedParameters: {},
