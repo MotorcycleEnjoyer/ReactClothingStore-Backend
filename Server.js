@@ -302,7 +302,7 @@ app.post('/getRatingsAndReviews', (req, res) => {
     const totalRatingsCount = currProduct.ratings.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
     const averageRating = totalRatingsCount / currProduct.ratings.length
 
-    const reviews = Array.from(helper.limitedArrayPull(currProduct.reviews, i => i.length > 1, 10))
+    const reviews = Array.from(helper.limitedArrayPull(currProduct.reviews, i => i.length > 10, 10))
 
     res.status(200).send({averageRating, reviews})
 })
@@ -321,7 +321,7 @@ app.post('/reviews', (req, res) => {
         const currProduct = allRatingsAndReviews[id]
         currProduct.reviews.push(review)
         saveAllRatingsAndReviews()
-        const reviews = currProduct.reviews
+        const reviews = Array.from(helper.limitedArrayPull(currProduct.reviews, i => i.length > 10, 10))
         return res.send({reviews})
     }else{
         res.status(500)
