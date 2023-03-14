@@ -24,7 +24,7 @@ app.use(cors(corsOptions));
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
-let sessions, userCredentials, allShoppingCarts, allRatings
+let sessions, userCredentials, allShoppingCarts, allRatingsAndReviews
 
 app.get("/shoppingCart", (req, res) => {
     const sessionId = getSession(req.headers.cookie)
@@ -281,11 +281,11 @@ app.post('/ratings', (req,res) => {
     }
     if(sessions[sessionId].type === "user")
     {
-        console.log(rating, id)
-        allRatings[id].push(rating)
-        saveRatings()
-        const totalRatingsCount = allRatings[id].reduce((accumulator, currentItem) => accumulator + currentItem, 0)
-        const averageRating = totalRatingsCount / allRatings[id].length
+        const currProduct = allRatingsAndReviews[id]
+        currProduct.ratings.push(rating)
+        saveAllRatingsAndReviews()
+        const totalRatingsCount = currProduct.ratings.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
+        const averageRating = totalRatingsCount / currProduct.ratings.length
         return res.send({averageRating: averageRating})
     }else{
         res.status(500)
@@ -293,14 +293,37 @@ app.post('/ratings', (req,res) => {
     }
 })
 
-app.post('/getRatings', (req, res) => {
+app.post('/getRatingsAndReviews', (req, res) => {
     const { id } = req.body
     if(id === undefined){
         return res.status(500).send("Invalid Query.")
     }
-    const totalRatingsCount = allRatings[id].reduce((accumulator, currentItem) => accumulator + currentItem, 0)
-    const averageRating = totalRatingsCount / allRatings[id].length
-    res.status(200).send({averageRating: averageRating})
+    const currProduct = allRatingsAndReviews[id]
+    const totalRatingsCount = currProduct.ratings.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
+    const averageRating = totalRatingsCount / currProduct.ratings.length
+
+    const reviews = currProduct.reviews
+
+    res.status(200).send({averageRating: averageRating, reviews: reviews})
+})
+
+app.post('/reviews', (req, res) => {
+    const { id, review } = req.body
+    const sessionId = helper.cookieChecker(req.headers.cookie)
+    if(sessionId === undefined){
+        return res.send("Invalid cookie.")
+    }
+    if(sessions[sessionId].type === "user")
+    {
+        const currProduct = allRatingsAndReviews[id]
+        currProduct.reviews.push(review)
+        saveAllRatingsAndReviews()
+        const reviews = currProduct.reviews
+        return res.send({reviews})
+    }else{
+        res.status(500)
+        return res.send("You are not logged in!")
+    }
 })
 
 function getSession(cookie){
@@ -329,7 +352,7 @@ app.listen(5000, console.log("Running on port 5000"), async()=>{
     userCredentials = await loadCreds()
     sessions = await loadSessions()
     allShoppingCarts = await loadAllShoppingCarts()
-    allRatings = await loadAllRatings()
+    allRatingsAndReviews = await loadAllRatingsAndReviews()
 })
 
 function getShoppingCart(sessionId){
@@ -364,9 +387,23 @@ async function loadAllShoppingCarts(){
     let allShoppingCarts = await loadFile('shoppingCarts.json') || {"loggedInCarts": {}, "anonymousCarts": {}}
     return allShoppingCarts
 }
-async function loadAllRatings(){
-    let allRatings = await loadFile('allRatings.json') || {"0": [], "1": [], "2": []}
-    return allRatings
+async function loadAllRatingsAndReviews(){
+    let allRatingsAndReviews = await loadFile('allRatingsAndReviews.json') || 
+    {
+        "0": {
+            "reviews": [],
+            "ratings": []
+        },
+        "1": {
+            "reviews": [],
+            "ratings": []
+        },
+        "2": {
+            "reviews": [],
+            "ratings": []
+        },
+}
+    return allRatingsAndReviews
 }
 
 function saveUserCredentials(){
@@ -381,8 +418,8 @@ function saveShoppingCarts(){
     saveDataAsJSON('shoppingCarts.json', allShoppingCarts)
 }
 
-function saveRatings(){
-    saveDataAsJSON('allRatings.json', allRatings)
+function saveAllRatingsAndReviews(){
+    saveDataAsJSON('allRatingsAndReviews.json', allRatingsAndReviews)
 }
 
 async function saveDataAsJSON(fileName, sourceVariable){
