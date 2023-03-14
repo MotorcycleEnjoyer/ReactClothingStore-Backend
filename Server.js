@@ -302,7 +302,7 @@ app.post('/getRatingsAndReviews', (req, res) => {
     const totalRatingsCount = currProduct.ratings.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
     const averageRating = totalRatingsCount / currProduct.ratings.length
 
-    const reviews = currProduct.reviews
+    const reviews = Array.from(helper.limitedArrayPull(currProduct.reviews, i => i.length > 1, 10))
 
     res.status(200).send({averageRating, reviews})
 })
@@ -312,6 +312,9 @@ app.post('/reviews', (req, res) => {
     const sessionId = helper.cookieChecker(req.headers.cookie)
     if(sessionId === undefined){
         return res.send("Invalid cookie.")
+    }
+    if(review === undefined || review === null || review.length > 200){
+        return res.status(500).send("Invalid Review")
     }
     if(sessions[sessionId].type === "user")
     {
