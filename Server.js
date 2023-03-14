@@ -286,7 +286,7 @@ app.post('/ratings', (req,res) => {
         saveAllRatingsAndReviews()
         const totalRatingsCount = currProduct.ratings.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
         const averageRating = totalRatingsCount / currProduct.ratings.length
-        return res.send({averageRating: averageRating})
+        return res.send({averageRating})
     }else{
         res.status(500)
         return res.send("You are not logged in!")
@@ -304,7 +304,7 @@ app.post('/getRatingsAndReviews', (req, res) => {
 
     const reviews = currProduct.reviews
 
-    res.status(200).send({averageRating: averageRating, reviews: reviews})
+    res.status(200).send({averageRating, reviews})
 })
 
 app.post('/reviews', (req, res) => {
