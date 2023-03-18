@@ -6,3 +6,7 @@
 /userCredentials.json
 /shoppingCarts.json
 /allRatingsAndReviews.json
+
+/feedback.js
+/mongoServer.js
+/mongoTutorial.js
