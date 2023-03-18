@@ -39,6 +39,10 @@ function genRegex(searchTerm)
 // Credit to Icepickle on StackOverflow
 // URL: https://stackoverflow.com/questions/56168771/how-to-limit-for-10-results-the-array-filter
 function* limitedArrayPull(array, condition, maxSize) {
+    if(array === null || array === undefined){
+        console.log("NO ARRAY???")
+        return []
+    }
     if (!maxSize || maxSize > array.length) {
       maxSize = array.length;
     }
@@ -214,8 +218,8 @@ function editFunction(myCart, productId, newData, oldData, amount){
     }
 }
 
-function validateDataGiven(productId, dataObject, amount){
-/*     let dataKeys = Object.keys(dataObject)
+function validateDataGiven(productId, userChoices, amount){
+/*     let dataKeys = Object.keys(userChoices)
     for(key of dataKeys){
         
     } */
@@ -228,23 +232,23 @@ function validateDataGiven(productId, dataObject, amount){
         console.error(`Amount ${amount} is invalid.`)
         return false
     }
-    let size = dataObject.size
+    let size = userChoices.size
     let properSizes = ["S","M","L", "XL","XXL"]
     if(properSizes.indexOf(size) === -1){
         console.error(`Given size ${size} is invalid.`)
         return false
     }
-    let sex = dataObject.sexCategory
+    let sex = userChoices.sexCategory
     if(sex !== "M" && sex !== "F"){
         console.error(`Given sex "${sex}" is not in Size Chart!`)
         return false
     }
-    let ageCategory = dataObject.ageCategory
+    let ageCategory = userChoices.ageCategory
     if(ageCategory !== "kids" && ageCategory !== "adults"){
         console.error(`Given ageCategory "${ageCategory}" not in Size Chart!`)
         return false
     }
-    let color = dataObject.color
+    let color = userChoices.color
     let product = getProductFromProductDatabase("NONE", productId)
     if(product.details.colorOptions.indexOf(color) === -1){
         console.error(`The color "${color}" is invalid option for product: "${product.name}"`)
@@ -269,5 +273,5 @@ module.exports =
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
     createLoggedInUserSession, hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
     validateDataGiven, editItemInCart, deleteItemFromCart, editFunction, createNewObject,
-    createLoggedInCart, userNameIsAvailable, limitedArrayPull
+    createLoggedInCart, userNameIsAvailable, limitedArrayPull, areIdentical
     }
