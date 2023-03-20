@@ -76,11 +76,12 @@ async function addReviewToMainArray (newReview) {
             ratingArray: (rating === undefined || rating === null) ? [] : [ rating ]
         }
         await createAndSaveRecord(FeedbackModel, dataObject)
+        return
     } else {
         if (rating !== undefined && rating !== null) {
             allReviewsForProduct.ratingArray.push(rating)
         }
-        if (rating !== undefined && rating !== null) {
+        if (review !== undefined && review !== null) {
             allReviewsForProduct.reviewArray.push(review)
         }
         await allReviewsForProduct.save()
@@ -107,7 +108,12 @@ async function addItemToUserReview (newReview, idOrAnonCookie) {
         await user.save()
         return true
     } else {
-        user.reviews.rating = rating
+        if (rating !== undefined && rating !== null) {
+            user.reviews[indexOfExistingReview].rating = rating
+        }
+        if (review !== undefined && review !== null) {
+            user.reviews[indexOfExistingReview].review = review
+        }
         await user.save()
         await addReviewToMainArray(newReview)
         return false
