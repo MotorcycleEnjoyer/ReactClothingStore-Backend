@@ -25,11 +25,12 @@ app.use(cors(corsOptions));
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
-let sessions, userCredentials, allShoppingCarts, allRatingsAndReviews, connectedToMongoDB
+let sessions, userCredentials, allShoppingCarts, allRatingsAndReviews, connectedToMongoDB, avgRatings
 
 app.listen(5000, console.log("Running on port 5000"), async () => {
     connectedToMongoDB = await mongoHelper.connectToDatabase(DATABASE_URL)
     sessions = await loadSessions()
+    avgRatings = await loadRatings()
 })
 
 const loadFile = async (fileName) => {
@@ -43,6 +44,11 @@ const loadFile = async (fileName) => {
     }
 }
 
+async function loadRatings(){
+    let ratings = await loadFile('ratings.json') || {}
+    return ratings
+}
+
 async function loadSessions(){
     let sessions = await loadFile('sessions.json') || {}
     return sessions
@@ -50,6 +56,10 @@ async function loadSessions(){
 
 function saveSessions(){
     saveDataAsJSON('sessions.json', sessions)
+}
+
+function saveRatings(){
+    saveDataAsJSON('ratings.json', avgRatings)
 }
 
 async function saveDataAsJSON(fileName, sourceVariable){
@@ -121,6 +131,7 @@ app.get('/p/*/id/*', function(req,res){
 
     let productId = helper.getProductIdFromUrl(req.url)
     let searchResults = helper.getProductFromProductDatabase("NoName", productId)
+
     return res.send(searchResults)
 
     rateLimiter.consume(req.headers.cookie, 2) // consume 2 points
@@ -384,6 +395,9 @@ app.post('/ratings', async (req,res) => {
         const currProduct = await mongoHelper.getAllReviewsForProduct({productId: id})
         const totalRatingsCount = currProduct.ratingArray.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
         const averageRating = totalRatingsCount / currProduct.ratingArray.length
+
+        avgRatings[id] = { averageRating: averageRating.toFixed(2) }
+        saveRatings()
         return res.send({averageRating})
     }else{
         res.status(500)
