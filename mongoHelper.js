@@ -28,8 +28,12 @@ const ratingsAndReviewsSchema = new mongoose.Schema({
 const FeedbackModel = new mongoose.model("feedback", ratingsAndReviewsSchema)
 
 async function connectToDatabase (location) {
-    const weAreConnected = mongoose.connect(location)
-    return weAreConnected !== null
+    try {
+        await mongoose.connect(location);
+      } catch (error) {
+        return false
+      }
+    return true
 }
 
 function areIdentical(oldData, newData){
