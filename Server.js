@@ -6,16 +6,9 @@ const saltRounds = 12
 const fs = require("fs")
 const cors = require("cors")
 const helper = require("./helper")
-const { RateLimiterMemory } = require('rate-limiter-flexible');
 const mongoHelper = require("./mongoHelper")
-const DATABASE_URL = "mongodb://127.0.0.1:27017/react_clothing_store_db"
-
-const opts = {
-    points: 4, // 6 points
-    duration: 3, // Per second
-  };
-  
-const rateLimiter = new RateLimiterMemory(opts);
+const DATABASE_URL = "INVALID_MONGO_URL__mongodb://127.0.0.1:27017/react_clothing_store_db"
+const path = require("path")
 
 const corsOptions = {
   origin: 'http://localhost:3000',
@@ -24,13 +17,24 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
+app.use(express.static(path.join(__dirname, "build")))
 
-let sessions, userCredentials, allShoppingCarts, allRatingsAndReviews, connectedToMongoDB, avgRatings
+let sessions, allUserData, allRatingsAndReviews, connectedToMongoDB, avgRatings
 
-app.listen(5000, console.log("Running on port 5000"), async () => {
+app.listen(5000, async () => {
+    console.log("Server started on port: 5000")
     connectedToMongoDB = await mongoHelper.connectToDatabase(DATABASE_URL)
-    sessions = await loadSessions()
-    avgRatings = await loadRatings()
+    console.log(`Mongo connection succeeded? [${connectedToMongoDB}]`)
+    if (connectedToMongoDB) {
+        sessions = {}
+        avgRatings = await loadRatings()
+    } else {
+        console.log("Mongo Failed, Reverting to JSON File Storage.")
+        sessions = await loadSessions()
+        avgRatings = await loadRatings()
+        allUserData = await loadUsers()
+        allRatingsAndReviews = await loadAllRatingsAndReviews()
+    }
 })
 
 const loadFile = async (fileName) => {
@@ -44,6 +48,24 @@ const loadFile = async (fileName) => {
     }
 }
 
+async function loadAllRatingsAndReviews(){
+    let ratings = await loadFile('allRatingsAndReviews.json') || {
+        "0": {
+            "reviews": [],
+            "ratings": []
+        },
+        "1": {
+            "reviews": [],
+            "ratings": []
+        },
+        "2": {
+            "reviews": [],
+            "ratings": []
+        },
+    }
+    return ratings
+}
+
 async function loadRatings(){
     let ratings = await loadFile('ratings.json') || {}
     return ratings
@@ -54,12 +76,24 @@ async function loadSessions(){
     return sessions
 }
 
+async function loadUsers(){
+    let users = await loadFile('shoppingCarts.json') || {"registeredUsers": [], "anonymousCarts": {}}
+    return users
+}
+
 function saveSessions(){
     saveDataAsJSON('sessions.json', sessions)
 }
 
 function saveRatings(){
     saveDataAsJSON('ratings.json', avgRatings)
+}
+
+function saveUserData(){
+    saveDataAsJSON('shoppingCarts.json', allUserData)
+}
+function saveAllRatingsAndReviews(){
+    saveDataAsJSON('allRatingsAndReviews.json', allRatingsAndReviews)
 }
 
 async function saveDataAsJSON(fileName, sourceVariable){
@@ -70,9 +104,17 @@ async function saveDataAsJSON(fileName, sourceVariable){
     })
 }
 
+function deleteTempUserCart(cookie){
+    delete allUserData.anonymousCarts[cookie]
+    saveUserData()
+}
+
 function getSession(cookie){
     if(cookie === undefined)
+    {
+        console.log("COOKIE NOT FOUND")
         return undefined
+    }
     let sessionId = cookie.split('=')[1]
     let userSession = sessions[sessionId]
     if(!userSession){
@@ -89,30 +131,54 @@ function deleteOldSession(cookie){
 
 async function getShoppingCart(sessionId){
     const sessionObj = sessions[sessionId]
-    if(sessionObj.type === "anonymous"){
-        const { shoppingCart } = await mongoHelper.getUser({ temporaryAnonCookie: sessionId })
-        return { shoppingCart, type: "anonymous"}
-    }else{
-        const myUser = await mongoHelper.getUser({ username: sessionObj.username })
-        return { shoppingCart: myUser.shoppingCart, type: "user" }
+    if (connectedToMongoDB) {
+        if(sessionObj.type === "anonymous"){
+            const { shoppingCart } = await mongoHelper.getUser({ temporaryAnonCookie: sessionId })
+            return { shoppingCart, type: "anonymous"}
+        }else{
+            const myUser = await mongoHelper.getUser({ username: sessionObj.username })
+            return { shoppingCart: myUser.shoppingCart, type: "user" }
+        }
+    } else {
+        if(sessionObj.type === "anonymous"){
+            const user = allUserData.anonymousCarts[sessionId]
+            return { shoppingCart: user.shoppingCart, type: "anonymous" }
+        }else{
+            const user = helper.getUserByCartId(sessionObj.cartId, allUserData)
+            console.log(user)
+            return { shoppingCart: user.shoppingCart, type: "user"}
+        }
     }
 }
 
-app.get("/shoppingCart", async (req, res) => {
+
+
+app.get("/backend/shoppingCart", async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined || !sessionId){
-        const newAnon = await mongoHelper.createAnon()
-        sessions[newAnon.temporaryAnonCookie] = {type: "anonymous"}
-        saveSessions()       
-        res.set('Set-Cookie', `session=${newAnon.temporaryAnonCookie}`)
-        const cart = { shoppingCart: newAnon.shoppingCart, type: "anonymous" }
-        return res.status(200).send(cart)
+        if (connectedToMongoDB) {
+            const newAnon = await mongoHelper.createAnon()
+            sessions[newAnon.temporaryAnonCookie] = {type: "anonymous"}
+            saveSessions()       
+            res.set('Set-Cookie', `session=${newAnon.temporaryAnonCookie}`)
+            const cart = { shoppingCart: newAnon.shoppingCart, type: "anonymous" }
+            return res.status(200).send(cart)
+        } else {
+            const temporaryUserId = uuidv4()
+            helper.createAnonymousSession(temporaryUserId, sessions)
+            helper.createAnonymousShoppingCart(temporaryUserId, allUserData)
+            saveSessions(); saveUserData();        
+            res.set('Set-Cookie', `session=${temporaryUserId}`)
+            return res.send(await getShoppingCart(temporaryUserId))
+        }
+        
+    } else {
+        await getShoppingCart(sessionId)
+        res.status(200).send(await getShoppingCart(sessionId))
     }
-    const cart = await getShoppingCart(sessionId)
-    res.status(200).send(cart)
 })
 
-app.get('/s', function(req,res){
+app.get('/backend/s', function(req,res){
     let query = helper.getQueryFromUrl(req.url)
     if(query === undefined || query.length > 50){
         return res.status(500).send("Invalid Query")
@@ -127,26 +193,15 @@ app.get('/s', function(req,res){
     
 })
 
-app.get('/p/*/id/*', function(req,res){
+app.get('/backend/p/*/id/*', function(req,res){
 
     let productId = helper.getProductIdFromUrl(req.url)
     let searchResults = helper.getProductFromProductDatabase("NoName", productId)
 
     return res.send(searchResults)
-
-    rateLimiter.consume(req.headers.cookie, 2) // consume 2 points
-      .then((rateLimiterRes) => {
-        // 2 points consumed
-        
-      })
-      .catch((rateLimiterRes) => {
-        // Not enough points to consume
-        return res.send("TOO MANY REQUESTS! SLOW DOWN!")
-      });
-    
 })
 
-app.post('/suggestions', function(req,res){
+app.post('/backend/suggestions', function(req,res){
     let phrase = req.body.searchTerm
     if(phrase === undefined || phrase.length > 50)
     {
@@ -160,7 +215,7 @@ app.post('/suggestions', function(req,res){
     }
 })
 
-app.post('/addToCart', async function(req,res){
+app.post('/backend/addToCart', async function(req,res){
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
         res.send("Invalid cookie.")
@@ -173,12 +228,27 @@ app.post('/addToCart', async function(req,res){
             userSelectedParameters: newUserChoices, 
             amount: parseInt(amount)
         }
-        if(sessions[sessionId].type === "anonymous"){
-            const shoppingCart = await mongoHelper.addItemToMongoCart(dataObject, { temporaryAnonCookie: sessionId })
-            return res.status(200).send({shoppingCart, type: "anonymous"})
-        } else{
-            const shoppingCart = await mongoHelper.addItemToMongoCart(dataObject, { username: sessions[sessionId].username})
-            return res.status(200).send({ shoppingCart, type: "user" })
+        if (connectedToMongoDB) {
+            if (sessions[sessionId].type === "anonymous") {
+                const shoppingCart = await mongoHelper.addItemToMongoCart(dataObject, { temporaryAnonCookie: sessionId })
+                return res.status(200).send({shoppingCart, type: "anonymous"})    
+            } else {
+                const shoppingCart = await mongoHelper.addItemToMongoCart(dataObject, { username: sessions[sessionId].username})
+                return res.status(200).send({ shoppingCart, type: "user" })
+            }
+        } else {
+            const cart = await getShoppingCart(sessionId)
+            const incrementedExisting = helper.incrementAmountOfExistingCartItem(cart.shoppingCart, productId, newUserChoices, parseInt(amount))
+            if (incrementedExisting) {
+                saveUserData()
+                return res.status(200).send(await getShoppingCart(sessionId))    
+            } else {
+                let tempObject = helper.createNewObject(productId, newUserChoices, parseInt(amount))
+                let myCart = await getShoppingCart(sessionId)
+                myCart.shoppingCart.push(tempObject)
+                saveUserData();
+                return res.status(200).send(await getShoppingCart(sessionId))
+            }
         }
     } else {
         return res.status(200).send("Invalid data provided.")
@@ -186,7 +256,7 @@ app.post('/addToCart', async function(req,res){
     
 })
 
-app.post('/editCartItem', async (req, res) => {
+app.post('/backend/editCartItem', async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
         res.send("POST/editCartItem: Invalid cookie.")
@@ -196,19 +266,46 @@ app.post('/editCartItem', async (req, res) => {
         helper.validateDataGiven(productId, newUserChoices, amount) &&
         helper.validateDataGiven(productId, oldUserChoices, amount)
     ){   
-        if(sessions[sessionId].type === "anonymous"){
-            const shoppingCart = await mongoHelper.editItemInMongoCart({productId, oldUserChoices, newUserChoices, index, amount: parseInt(amount)}, { temporaryAnonCookie: sessionId })
-            return res.status(200).send({shoppingCart, type: "anonymous"})
+        if (connectedToMongoDB) {
+            if(sessions[sessionId].type === "anonymous"){
+                const shoppingCart = await mongoHelper.editItemInMongoCart({productId, oldUserChoices, newUserChoices, index, amount: parseInt(amount)}, { temporaryAnonCookie: sessionId })
+                return res.status(200).send({shoppingCart, type: "anonymous"})
+            } else{
+                const shoppingCart = await mongoHelper.editItemInMongoCart({productId, oldUserChoices, newUserChoices, index, amount: parseInt(amount)}, { username: sessions[sessionId].username })
+                return res.status(200).send({shoppingCart, type: "user"})
+            }
         } else{
-            const shoppingCart = await mongoHelper.editItemInMongoCart({productId, oldUserChoices, newUserChoices, index, amount: parseInt(amount)}, { username: sessions[sessionId].username })
-            return res.status(200).send({shoppingCart, type: "user"})
-        }
+            const cart = await getShoppingCart(sessionId)
+            if(helper.areIdentical(oldUserChoices, newUserChoices)) {
+                // change the value of current object
+                cart.shoppingCart[index].amount = parseInt(amount)
+            } else {
+                const indexOfIdenticalMatch = cart.shoppingCart.findIndex((item) => {
+                    if(helper.areIdentical(item.userSelectedParameters, newUserChoices)){
+                        return item
+                    }
+                })
+    
+                const itemExistsInAnotherIndex = indexOfIdenticalMatch !== -1
+                if( itemExistsInAnotherIndex ) {
+                    // increment that other object
+                    cart.shoppingCart[indexOfIdenticalMatch].amount += parseInt(amount)
+                    helper.deleteItemFromCart(cart.shoppingCart, index)
+                } else {
+                    // create a new object
+                    helper.deleteItemFromCart(cart.shoppingCart, index)
+                    cart.shoppingCart.push(helper.createNewObject(productId, newUserChoices, parseInt(amount)))
+                }
+            }
+            saveUserData()
+            return res.status(200).send(await getShoppingCart(sessionId))
+        }       
     }else{
         return res.status(200).send("Invalid Data!")
     }
 })
 
-app.post('/deleteCartItem', async (req, res) => {
+app.post('/backend/deleteCartItem', async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined){
         return res.send("POST/deleteCartItem: Invalid cookie.")
@@ -220,30 +317,45 @@ app.post('/deleteCartItem', async (req, res) => {
         return res.status(200).send("POST/deleteCartItem: Invalid Data.")
     }
 
-    if(sessions[sessionId].type === "anonymous"){
-        const shoppingCart = await mongoHelper.deleteItemInMongoCart(indexOfCartItem, { temporaryAnonCookie: sessionId })
-        return res.status(200).send({shoppingCart, type: "anonymous"})
-    } else{
-        const shoppingCart = await mongoHelper.deleteItemInMongoCart(indexOfCartItem, { username: sessions[sessionId].username})
-        return res.status(200).send({ shoppingCart, type: "user" })
+    if (connectedToMongoDB) {
+        if(sessions[sessionId].type === "anonymous"){
+            const shoppingCart = await mongoHelper.deleteItemInMongoCart(indexOfCartItem, { temporaryAnonCookie: sessionId })
+            return res.status(200).send({shoppingCart, type: "anonymous"})
+        } else{
+            const shoppingCart = await mongoHelper.deleteItemInMongoCart(indexOfCartItem, { username: sessions[sessionId].username})
+            return res.status(200).send({ shoppingCart, type: "user" })
+        }
+    } else {
+        const cart = await getShoppingCart(sessionId)
+        helper.deleteItemFromCart(cart.shoppingCart, indexOfCartItem)
+        saveUserData()
+        return res.status(200).send(await getShoppingCart(sessionId))
     }
 })
 
-app.post('/clearCart', async (req, res) => {
+app.post('/backend/clearCart', async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined){
         return res.send("Invalid cookie.")
     }
-    if(sessions[sessionId].type === "anonymous"){
-        const shoppingCart = await mongoHelper.clearCartInMongo({ temporaryAnonCookie: sessionId })
-        return res.status(200).send({shoppingCart, type: "anonymous"})
-    } else{
-        const shoppingCart = await mongoHelper.clearCartInMongo({ username: sessions[sessionId].username })
-        return res.status(200).send({ shoppingCart, type: "user" })
+    if (connectedToMongoDB) { 
+        if(sessions[sessionId].type === "anonymous"){
+            const shoppingCart = await mongoHelper.clearCartInMongo({ temporaryAnonCookie: sessionId })
+            return res.status(200).send({shoppingCart, type: "anonymous"})
+        } else{
+            const shoppingCart = await mongoHelper.clearCartInMongo({ username: sessions[sessionId].username })
+            return res.status(200).send({ shoppingCart, type: "user" })
+        }
+    } else {
+        let cart = await getShoppingCart(sessionId)
+        cart.shoppingCart.length = 0
+        saveUserData()
+        return res.status(200).send(await getShoppingCart(sessionId))
     }
+    
 })
 
-app.post('/login', async (req, res) => {
+app.post('/backend/login', async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined){
         return res.send("Invalid cookie.")
@@ -261,12 +373,28 @@ app.post('/login', async (req, res) => {
     if(username.length > 30 || password.length > 30){
         return res.status(500).send("Login Error")
     }
-    const mongoSearchForUsername = await mongoHelper.getUser({username})
-    console.log(mongoSearchForUsername)
-    if(mongoSearchForUsername === null) {
+
+    let usernameFound = false 
+    let comparisonPassword = ""
+    let userStore, mongoStore
+    if (connectedToMongoDB) {
+        mongoStore = await mongoHelper.getUser({username})
+        usernameFound = ( mongoStore !== null )
+        if(usernameFound){
+            comparisonPassword = mongoStore.password
+        }
+    } else {
+        userStore = helper.getUser(username, allUserData)
+        usernameFound = ( userStore !== undefined && userStore !== null )
+        if(usernameFound) {
+            comparisonPassword = userStore.password
+        }
+    }
+
+    if(!usernameFound) {
         return res.status(500).send("Login Error")
     } else {
-        bcrypt.compare(password, mongoSearchForUsername.password, async (err, result) => {
+        bcrypt.compare(password, comparisonPassword, async (err, result) => {
             if(err){
                 console.log(err)
                 return
@@ -285,14 +413,21 @@ app.post('/login', async (req, res) => {
                     res.status(401).send("POST/login: Already logged in!")
                 }
                 if(!isAlreadyLoggedIn){
-
                     const newSessionToken = uuidv4()
-                    sessions[newSessionToken] = {type: "user", username: username}
-                    deleteOldSession(sessionId)
-                    saveSessions()
-                    await mongoHelper.deleteAnon({temporaryAnonCookie: sessionId})
+                    if (connectedToMongoDB) {
+                        sessions[newSessionToken] = {type: "user", username: username}
+                        deleteOldSession(sessionId)
+                        saveSessions()
+                        await mongoHelper.deleteAnon({temporaryAnonCookie: sessionId})
+                    } else {
+                        deleteOldSession(sessionId)
+                        deleteTempUserCart(sessionId)
+                        const cartId = userStore.cartId
+                        sessions[newSessionToken] = { type:"user", cartId: cartId}
+                        saveSessions(); saveUserData();
+                    }
                     res.set('Set-Cookie', `session=${newSessionToken}`)
-                    return res.status(200).send("POST/login: Logged in successfuly!")
+                    res.status(200).send("POST/login: Logged in successfuly!")
                 }
             }else{
                 console.log("POST/login: bad creds BECAUSE BCRYPT FAILED")
@@ -302,7 +437,7 @@ app.post('/login', async (req, res) => {
     }
 })
 
-app.post("/register", async (req,res) => {
+app.post("/backend/register", async (req,res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined){
         return res.send("Invalid cookie.")
@@ -322,8 +457,15 @@ app.post("/register", async (req,res) => {
     if(password.length > 30 || username.length > 30){
         return res.status(500).send("Error creating account.")
     }
-    const mongoSearchForUsername = await mongoHelper.getUser({username})
-    if(mongoSearchForUsername === null){
+
+    let nameIsAvailable = false
+    if (connectedToMongoDB) {
+        nameIsAvailable = await mongoHelper.getUser({username}) === null
+    } else {
+       nameIsAvailable = helper.userNameIsAvailable(username, allUserData) 
+    }
+    
+    if (nameIsAvailable) {
         bcrypt.genSalt(saltRounds, async function(err, salt) {
             if(err){
                 console.log(err)
@@ -334,22 +476,31 @@ app.post("/register", async (req,res) => {
                     return res.status(500).send("Error creating account.")
                 }
                 const newSessionToken = uuidv4()
-                
-                await mongoHelper.createUserAndDeleteAnon(
-                    {
-                        username: username, 
-                        password: hash
-                    }, 
-                    { 
-                        temporaryAnonCookie: sessionId
-                    }
-                )
-                const newUser = await mongoHelper.getUser({username})
-                sessions[newSessionToken] = {type: "user", username: newUser.username}
-                deleteOldSession(sessionId)
-                saveSessions()
+                if (connectedToMongoDB) {
+                    await mongoHelper.createUserAndDeleteAnon(
+                        {
+                            username: username, 
+                            password: hash
+                        }, 
+                        { 
+                            temporaryAnonCookie: sessionId
+                        }
+                    )
+                    const newUser = await mongoHelper.getUser({username})
+                    sessions[newSessionToken] = {type: "user", username: newUser.username}
+                    deleteOldSession(sessionId)
+                    saveSessions()
+                } else {
+                    const permanentCartId = uuidv4()
+                    allUserData.registeredUsers.push({username: username, password: hash, reviewsAndRatings: {}, cartId: permanentCartId, shoppingCart: []})
+                    sessions[newSessionToken] = { type:"user", cartId: permanentCartId}
+                    deleteTempUserCart(sessionId)
+                    deleteOldSession(sessionId)
+                    saveSessions(); saveUserData();
+                }
+
                 res.set('Set-Cookie', `session=${newSessionToken}`)
-                res.status(200).send("POST/register: Registered Successfully!")
+                return res.status(200).send("POST/register: Registered Successfully!")
             })
         });
     }else{
@@ -357,7 +508,7 @@ app.post("/register", async (req,res) => {
     }
 })
 
-app.post('/logout', (req,res) => {
+app.post('/backend/logout', async (req,res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
         res.send("Invalid cookie.")
@@ -365,22 +516,28 @@ app.post('/logout', (req,res) => {
     if(sessions[sessionId].type === "user")
     {
         delete sessions[sessionId]
+        if (connectedToMongoDB) {
+            const newAnon = await mongoHelper.createAnon()
+            sessions[newAnon.temporaryAnonCookie] = {type: "anonymous"}
+            saveSessions()       
+            res.set('Set-Cookie', `session=${newAnon.temporaryAnonCookie}`)
+            const cart = { shoppingCart: newAnon.shoppingCart, type: "anonymous" }
+            return res.status(200).send(cart)
+        } else {
+            const temporaryUserId = uuidv4()
+            helper.createAnonymousSession(temporaryUserId, sessions)
+            helper.createAnonymousShoppingCart(temporaryUserId, allUserData)
+            saveSessions(); saveUserData();        
+            res.set('Set-Cookie', `session=${temporaryUserId}`)
+            return res.send("POST/logout: Logged out successfully!")
+        }
     }else{
         res.status(200)
         return res.send("POST/logout: You are not logged in!")
     }
-    
-    saveSessions()
-    res.set('Set-Cookie', 'session=; expires=Thu, 01 Jan 1970 00:00:00 GMT') 
-    res.send("POST/logout: Logged out successfully!")
 })
 
-app.get("*", (req, res) =>{
-    res.status(404)
-    res.send(`<h1>Error 404, page not found</h1>`)
-})
-
-app.post('/ratings', async (req,res) => {
+app.post('/backend/ratings', async (req,res) => {
     const {rating, id} = req.body
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
@@ -388,43 +545,60 @@ app.post('/ratings', async (req,res) => {
 
     if(sessions[sessionId].type === "user")
     {
-        const dataObj = { productId: parseInt(id), rating: rating }
-        const username = sessions[sessionId].username
-        await mongoHelper.addItemToUserReview(dataObj, username)
+        if (connectedToMongoDB) {
+            const dataObj = { productId: parseInt(id), rating: rating }
+            const username = sessions[sessionId].username
+            await mongoHelper.addItemToUserReview(dataObj, username)
 
-        const currProduct = await mongoHelper.getAllReviewsForProduct({productId: id})
-        const totalRatingsCount = currProduct.ratingArray.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
-        const averageRating = totalRatingsCount / currProduct.ratingArray.length
+            const currProduct = await mongoHelper.getAllReviewsForProduct({productId: id})
+            const totalRatingsCount = currProduct.ratingArray.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
+            const averageRating = totalRatingsCount / currProduct.ratingArray.length
 
-        avgRatings[id] = { averageRating: averageRating.toFixed(2) }
-        saveRatings()
-        return res.send({averageRating})
+            avgRatings[id] = { averageRating: averageRating.toFixed(2) }
+            saveRatings()
+            return res.send({averageRating})
+        } else {
+            const currProduct = allRatingsAndReviews[id]
+            currProduct.ratings.push(rating)
+            saveAllRatingsAndReviews()
+            const totalRatingsCount = currProduct.ratings.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
+            const averageRating = totalRatingsCount / currProduct.ratings.length
+            avgRatings[id] = { averageRating: averageRating.toFixed(2) }
+            return res.send({averageRating})
+        }
+        
     }else{
         res.status(500)
         return res.send("You are not logged in!")
     }
 })
 
-app.post('/getRatingsAndReviews', async (req, res) => {
+app.post('/backend/getRatingsAndReviews', async (req, res) => {
     const { id } = req.body
     if(id === undefined){
         return res.status(500).send("Invalid Query.")
     }
-    const currProduct = await mongoHelper.getAllReviewsForProduct({ productId: parseInt(id) })
+    if (connectedToMongoDB) {
+        const currProduct = await mongoHelper.getAllReviewsForProduct({ productId: parseInt(id) })
+        if ( currProduct === null ){
+            return res.status(200).send({ averageRating: null, reviews: null })
+        } else {
+            const totalRatingsCount = currProduct.ratingArray.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
+            const averageRating = totalRatingsCount / currProduct.ratingArray.length 
+            const reviews = currProduct.reviewArray //Array.from(helper.limitedArrayPull(currProduct.reviews, i => i.length > 10, 10))
     
-    if ( currProduct === null ){
-        return res.status(200).send({ averageRating: null, reviews: null })
+            return res.status(200).send({averageRating: averageRating, reviews})
+        }
     } else {
-        const totalRatingsCount = currProduct.ratingArray.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
-        const averageRating = totalRatingsCount / currProduct.ratingArray.length 
-        const reviews = currProduct.reviewArray //Array.from(helper.limitedArrayPull(currProduct.reviews, i => i.length > 10, 10))
-
-        return res.status(200).send({averageRating: averageRating, reviews})
-        
-    }
+        const currProduct = allRatingsAndReviews[id]
+        const totalRatingsCount = currProduct.ratings.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
+        const averageRating = totalRatingsCount / currProduct.ratings.length
+        const reviews = Array.from(helper.limitedArrayPull(currProduct.reviews, i => i.length > 10, 10))
+        return res.status(200).send({averageRating, reviews})
+    }    
 })
 
-app.post('/reviews', async (req, res) => {
+app.post('/backend/reviews', async (req, res) => {
     const { id, review } = req.body
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
@@ -435,17 +609,34 @@ app.post('/reviews', async (req, res) => {
     }
     if(sessions[sessionId].type === "user")
     {
-        const username = sessions[sessionId].username
-        const reviewObj = {
-            productId: id, 
-            review: review
+        if (connectedToMongoDB) {
+            const username = sessions[sessionId].username
+            const reviewObj = {
+                productId: id, 
+                review: review
+            }
+            await mongoHelper.addItemToUserReview(reviewObj, username)
+            const allReviews = await mongoHelper.getAllReviewsForProduct({productId: id})
+            const reviews = allReviews.reviewArray //Array.from(helper.limitedArrayPull(allReviews.reviews, i => i.length > 10, 10))
+            return res.send({reviews})
+        } else {
+            const currProduct = allRatingsAndReviews[id]
+            currProduct.reviews.push(review)
+            saveAllRatingsAndReviews()
+            const reviews = Array.from(helper.limitedArrayPull(currProduct.reviews, i => i.length > 10, 10))
+            res.send({reviews})
         }
-        await mongoHelper.addItemToUserReview(reviewObj, username)
-        const allReviews = await mongoHelper.getAllReviewsForProduct({productId: id})
-        const reviews = allReviews.reviewArray //Array.from(helper.limitedArrayPull(allReviews.reviews, i => i.length > 10, 10))
-        return res.send({reviews})
     }else{
         res.status(500)
         return res.send("You are not logged in!")
     }
+})
+
+app.get("/*", (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'))
+})
+
+app.get("*", (req, res) =>{
+    res.status(404)
+    res.send(`<h1>Error 404, page not found</h1>`)
 })
