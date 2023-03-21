@@ -127,16 +127,6 @@ function checkIfUserIsLoggedIn(arr, sessions, username){
     return isLoggedIn
 }
 
-function createLoggedInUserSession(sessions, cartId){
-    const sessionId = uuidv4();
-    sessions[sessionId] = { type:"user", cartId: cartId}
-    return sessionId
-}
-
-function createLoggedInCart(allShoppingCarts, cartId){
-    allShoppingCarts.loggedInCarts[cartId] = {type: "user", shoppingCart: []}
-}
-
 function editItemInCart(cart, productId, newData, oldData, amount){
     let index = getIndexOfItemInCart(cart, productId, oldData)
     if(index === -1){
@@ -259,19 +249,25 @@ function validateDataGiven(productId, userChoices, amount){
     return true
 }
 
-function userNameIsAvailable(name, allCredentials){
-    const index = allCredentials.findIndex((item) => {
-        console.log(item.user, name)
-        return item.user === name
+function userNameIsAvailable(username, allCredentials){
+    const index = allCredentials.registeredUsers.findIndex((item) => {
+        return item.username === username
     })
-    console.log(index)
     return index === -1
+}
+
+function getUser(username, allCredentials) {
+    return allCredentials.registeredUsers.filter(item => item.username === username)[0]
+}
+
+function getUserByCartId(cartId, allCredentials){
+    return allCredentials.registeredUsers.filter(item => item.cartId === cartId)[0]
 }
 
 module.exports = 
 { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
-    createLoggedInUserSession, hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
+    hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
     validateDataGiven, editItemInCart, deleteItemFromCart, editFunction, createNewObject,
-    createLoggedInCart, userNameIsAvailable, limitedArrayPull, areIdentical
+    userNameIsAvailable, limitedArrayPull, areIdentical, getUser, getUserByCartId
     }
