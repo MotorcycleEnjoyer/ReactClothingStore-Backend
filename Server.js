@@ -40,7 +40,7 @@ app.listen(5000, async () => {
 const loadFile = async (fileName) => {
     try{
         const data = await fs.promises.readFile(fileName, "utf-8")
-        let temp = JSON.parse(data) || undefined
+        const temp = JSON.parse(data) || undefined
         return temp
     } catch (error){
         console.error(error)
@@ -49,7 +49,7 @@ const loadFile = async (fileName) => {
 }
 
 async function loadAllRatingsAndReviews(){
-    let ratings = await loadFile('allRatingsAndReviews.json') || {
+    const ratings = await loadFile('allRatingsAndReviews.json') || {
         "0": {
             "reviews": [],
             "ratings": []
@@ -67,17 +67,17 @@ async function loadAllRatingsAndReviews(){
 }
 
 async function loadRatings(){
-    let ratings = await loadFile('ratings.json') || {}
+    const ratings = await loadFile('ratings.json') || {}
     return ratings
 }
 
 async function loadSessions(){
-    let sessions = await loadFile('sessions.json') || {}
+    const sessions = await loadFile('sessions.json') || {}
     return sessions
 }
 
 async function loadUsers(){
-    let users = await loadFile('shoppingCarts.json') || {"registeredUsers": [], "anonymousCarts": {}}
+    const users = await loadFile('shoppingCarts.json') || {"registeredUsers": [], "anonymousCarts": {}}
     return users
 }
 
@@ -115,8 +115,8 @@ function getSession(cookie){
         console.log("COOKIE NOT FOUND")
         return undefined
     }
-    let sessionId = cookie.split('=')[1]
-    let userSession = sessions[sessionId]
+    const sessionId = cookie.split('=')[1]
+    const userSession = sessions[sessionId]
     if(!userSession){
         console.log("USER SESSION NOT FOUND")
         return undefined
@@ -179,13 +179,13 @@ app.get("/backend/shoppingCart", async (req, res) => {
 })
 
 app.get('/backend/s', function(req,res){
-    let query = helper.getQueryFromUrl(req.url)
+    const query = helper.getQueryFromUrl(req.url)
     if(query === undefined || query.length > 50){
         return res.status(500).send("Invalid Query")
     }
         
     if(helper.hasOnlyNumbersAndLetters(query)){
-        let searchResults = helper.getProductFromProductDatabase(query)
+        const searchResults = helper.getProductFromProductDatabase(query)
         return res.send(searchResults)
     }else{
         res.send("GET/s: INVALID SEARCH TERMS!!!")
@@ -195,20 +195,20 @@ app.get('/backend/s', function(req,res){
 
 app.get('/backend/p/*/id/*', function(req,res){
 
-    let productId = helper.getProductIdFromUrl(req.url)
-    let searchResults = helper.getProductFromProductDatabase("NoName", productId)
+    const productId = helper.getProductIdFromUrl(req.url)
+    const searchResults = helper.getProductFromProductDatabase("NoName", productId)
 
     return res.send(searchResults)
 })
 
 app.post('/backend/suggestions', function(req,res){
-    let phrase = req.body.searchTerm
+    const phrase = req.body.searchTerm
     if(phrase === undefined || phrase.length > 50)
     {
         return res.status(500).send("Invalid Query")
     }
     if(helper.hasOnlyNumbersAndLetters(phrase)){
-        let searchSuggestions = helper.findSearchSuggestions(phrase)
+        const searchSuggestions = helper.findSearchSuggestions(phrase)
         return res.send(searchSuggestions)
     }else{
         res.send("POST/suggestions: Invalid Characters")
@@ -243,8 +243,8 @@ app.post('/backend/addToCart', async function(req,res){
                 saveUserData()
                 return res.status(200).send(await getShoppingCart(sessionId))    
             } else {
-                let tempObject = helper.createNewObject(productId, newUserChoices, parseInt(amount))
-                let myCart = await getShoppingCart(sessionId)
+                const tempObject = helper.createNewObject(productId, newUserChoices, parseInt(amount))
+                const myCart = await getShoppingCart(sessionId)
                 myCart.shoppingCart.push(tempObject)
                 saveUserData();
                 return res.status(200).send(await getShoppingCart(sessionId))
@@ -347,7 +347,7 @@ app.post('/backend/clearCart', async (req, res) => {
             return res.status(200).send({ shoppingCart, type: "user" })
         }
     } else {
-        let cart = await getShoppingCart(sessionId)
+        const cart = await getShoppingCart(sessionId)
         cart.shoppingCart.length = 0
         saveUserData()
         return res.status(200).send(await getShoppingCart(sessionId))
@@ -400,8 +400,8 @@ app.post('/backend/login', async (req, res) => {
                 return
             }
             if(result){    
-                let arr = Object.keys(sessions)
-                let isAlreadyLoggedIn = arr.findIndex((item) => {
+                const arr = Object.keys(sessions)
+                const isAlreadyLoggedIn = arr.findIndex((item) => {
                     if (item.username !== undefined) {
                         if (item.username === username ) {
                             return item
