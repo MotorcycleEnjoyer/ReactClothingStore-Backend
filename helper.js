@@ -1,6 +1,5 @@
-const dummyProductDB = require('./dummyProductDB')
-const uuidv4 = require('uuid').v4
-const url = require("url")
+import dummyProductDB from "./DummyProductDB.js"
+import url from "url"
 const blockedCharacters = new RegExp("[~`!@#$%^&()_={}\\[\\]\\:;,\\.\\/<>\\\\*\\-+\\?]")
 
 function hasOnlyNumbersAndLetters(value){
@@ -264,10 +263,11 @@ function getUserByCartId(cartId, allCredentials){
     return allCredentials.registeredUsers.filter(item => item.cartId === cartId)[0]
 }
 
-module.exports = 
-{ findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
+const helper = { findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
     createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
     hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
     validateDataGiven, editItemInCart, deleteItemFromCart, editFunction, createNewObject,
     userNameIsAvailable, limitedArrayPull, areIdentical, getUser, getUserByCartId
-    }
+}
+
+export default helper

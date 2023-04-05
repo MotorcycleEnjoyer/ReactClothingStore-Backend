@@ -62,4 +62,5 @@ const db = [
 
 const suggestions = db.map(item => item.details.name)
 
-module.exports = {db, suggestions}
+const dummyProductDB = {db, suggestions}
+export default dummyProductDB

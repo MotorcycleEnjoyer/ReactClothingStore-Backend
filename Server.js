@@ -1,14 +1,19 @@
-const express = require('express')
+import express from "express"
 const app = express()
-const uuidv4 = require('uuid').v4
-const bcrypt = require('bcrypt')
+import {v4 as uuidv4} from "uuid"
+import bcrypt from "bcrypt"
 const saltRounds = 12
-const fs = require("fs")
-const cors = require("cors")
-const helper = require("./helper")
-const mongoHelper = require("./mongoHelper")
+import fs from "fs"
+import cors from "cors"
+import helper from "./helper.js"
+import mongoHelper from "./mongoHelper.js"
 const DATABASE_URL = "INVALID_MONGO_URL__mongodb://127.0.0.1:27017/react_clothing_store_db"
-const path = require("path")
+import path from "path"
+import { fileURLToPath } from "url"
+const __filename = fileURLToPath(import.meta.url)
+
+const __dirname = path.dirname(__filename)
+let sessions, allUserData, allRatingsAndReviews, connectedToMongoDB, avgRatings
 
 const corsOptions = {
   origin: 'http://localhost:3000',
@@ -18,24 +23,6 @@ app.use(cors(corsOptions));
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 app.use(express.static(path.join(__dirname, "build")))
-
-let sessions, allUserData, allRatingsAndReviews, connectedToMongoDB, avgRatings
-
-app.listen(5000, async () => {
-    console.log("Server started on port: 5000")
-    connectedToMongoDB = await mongoHelper.connectToDatabase(DATABASE_URL)
-    console.log(`Mongo connection succeeded? [${connectedToMongoDB}]`)
-    if (connectedToMongoDB) {
-        sessions = {}
-        avgRatings = await loadRatings()
-    } else {
-        console.log("Mongo Failed, Reverting to JSON File Storage.")
-        sessions = await loadSessions()
-        avgRatings = await loadRatings()
-        allUserData = await loadUsers()
-        allRatingsAndReviews = await loadAllRatingsAndReviews()
-    }
-})
 
 const loadFile = async (fileName) => {
     try{
@@ -640,3 +627,40 @@ app.get("*", (req, res) =>{
     res.status(404)
     res.send(`<h1>Error 404, page not found</h1>`)
 })
+
+connectedToMongoDB = await mongoHelper.connectToDatabase(DATABASE_URL)
+console.log(`Mongo connection succeeded? [${connectedToMongoDB}]`)
+if (connectedToMongoDB) {
+    sessions = {}
+    avgRatings = await loadRatings()
+} else {
+    console.log("Mongo Failed, Reverting to JSON File Storage.")
+    sessions = await loadSessions()
+    avgRatings = await loadRatings()
+    allUserData = await loadUsers()
+    allRatingsAndReviews = await loadAllRatingsAndReviews()
+}
+
+export async function appStartup() {
+    app.listen(5000, async() => {
+        console.log("Server started on port: 5000")
+        console.log(`Connected to mongoDb: [${connectedToMongoDB}]`)
+    })
+/*     app.listen(5000, async () => {
+        console.log("Server started on port: 5000")
+        connectedToMongoDB = await mongoHelper.connectToDatabase(DATABASE_URL)
+        console.log(`Mongo connection succeeded? [${connectedToMongoDB}]`)
+        if (connectedToMongoDB) {
+            sessions = {}
+            avgRatings = await loadRatings()
+        } else {
+            console.log("Mongo Failed, Reverting to JSON File Storage.")
+            sessions = await loadSessions()
+            avgRatings = await loadRatings()
+            allUserData = await loadUsers()
+            allRatingsAndReviews = await loadAllRatingsAndReviews()
+        }
+    })     */
+}
+
+export default app
