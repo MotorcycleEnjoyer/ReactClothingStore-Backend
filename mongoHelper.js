@@ -1,6 +1,6 @@
-import mongoose from "mongoose"
-import {v4 as uuidv4} from "uuid"
-import helper from "./helper.js"
+const mongoose = require("mongoose")
+const uuidv4 = require('uuid').v4
+const helper = require("./helper")
 
 const userDataSchema = new mongoose.Schema({
     username: String,
@@ -242,9 +242,7 @@ async function createAndSaveRecord (mongoModel, newParameters) {
     return record
 }
 
-const mongoHelper = { createAndSaveRecord, createUserAndDeleteAnon, createAnon, 
+module.exports = { createAndSaveRecord, createUserAndDeleteAnon, createAnon, 
     deleteItemInMongoCart, editItemInMongoCart, addItemToMongoCart,
     connectToDatabase, getUser, addItemToUserReview, getAllReviewsForProduct,
     clearCartInMongo, deleteAnon }
-
-export default mongoHelper
