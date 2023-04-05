@@ -21,8 +21,9 @@ app.use(express.static(path.join(__dirname, "build")))
 
 let sessions, allUserData, allRatingsAndReviews, connectedToMongoDB, avgRatings
 
-app.listen(5000, async () => {
-    console.log("Server started on port: 5000")
+module.exports = app
+
+async function setVars(){
     connectedToMongoDB = await mongoHelper.connectToDatabase(DATABASE_URL)
     console.log(`Mongo connection succeeded? [${connectedToMongoDB}]`)
     if (connectedToMongoDB) {
@@ -35,7 +36,8 @@ app.listen(5000, async () => {
         allUserData = await loadUsers()
         allRatingsAndReviews = await loadAllRatingsAndReviews()
     }
-})
+}
+setVars()
 
 const loadFile = async (fileName) => {
     try{
@@ -151,7 +153,9 @@ async function getShoppingCart(sessionId){
     }
 }
 
-
+app.get("/test", (req, res) => {
+    res.json({hello: "world"})
+})
 
 app.get("/backend/shoppingCart", async (req, res) => {
     const sessionId = getSession(req.headers.cookie)

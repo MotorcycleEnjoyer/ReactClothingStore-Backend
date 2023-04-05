@@ -1,14 +1,20 @@
-import request from 'supertest';
-import app from './app';
+const app = require("../Server")
+const request = require('supertest');
+/* const express = require("express")
+const fakeApp = express()
 
-test('GET / responds with hello world', async () => {
+fakeApp.get("/", (req, res) => {
+  res.json({hello: "world"})
+}) */
+
+test('GET /test responds with hello world', async () => {
   // arrange
   const api = request(app);
 
   // act
-  const response = await api.get('/');
+  const response = await api.get('/test');
 
   // assert
-  expect(response.status).toEqual(200);
-  expect(response.body).toEqual({ hello: 'world' });
+  expect(response.statusCode).toEqual(200);
+  expect(response.body).toEqual({ hello: 'world' })
 });

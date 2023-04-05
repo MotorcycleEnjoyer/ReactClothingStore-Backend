@@ -1,5 +1,5 @@
-const PORT = process.env.PORT || 3000;
-import app from './app.js';
+const PORT = process.env.PORT || 5000;
+const app = require("../Server")
 
 app.listen(PORT, (e) => {
   if (e) throw err;
