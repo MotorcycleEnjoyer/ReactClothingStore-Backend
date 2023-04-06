@@ -1,6 +1,6 @@
 const app = require("../Server")
 const request = require('supertest');
-const searchResults = require("./fixtures")
+const {searchResults, shoppingCarts} = require("./fixtures")
 
 test('GET /test responds with hello world', async () => {
   // arrange
@@ -14,7 +14,7 @@ test('GET /test responds with hello world', async () => {
   expect(response.body).toEqual({ hello: 'world' })
 });
 
-test('POST /backend/suggestions responds with array of suggestions', async () => {
+test('POST [/backend/suggestions] returns suggestion results array of strings', async () => {
   // arrange
   const api = request(app)
   const endpoint = "/backend/suggestions"
@@ -33,7 +33,7 @@ test('POST /backend/suggestions responds with array of suggestions', async () =>
   expect(fiftyCharResponse.body).toEqual([])
 })
 
-test('POST /backend/suggestions searchTerm(undefined || len>50 || len==0 || InvalidChars) returns error 500', async () => {
+test('POST [/backend/suggestions] returns code 500 upon invalid query ', async () => {
   // arrange
   const api = request(app)
   const endpoint = "/backend/suggestions"
@@ -56,7 +56,7 @@ test('POST /backend/suggestions searchTerm(undefined || len>50 || len==0 || Inva
   expect(emptyResponse.statusCode).toEqual(500)
 })
 
-test("GET /backend/s returns search results", async() => {
+test("GET [/backend/s] returns search results array of objects", async() => {
   // arrange
   const api = request(app)
   const baseURL = "/backend/s?k="
@@ -72,7 +72,7 @@ test("GET /backend/s returns search results", async() => {
   expect(genericResponse.body).toEqual(searchResults.generic)
 })
 
-test("GET /backend/s returns code 500 upon invalid query", async() => {
+test("GET [/backend/s] returns code 500 upon invalid query", async() => {
   // arrange
   const api = request(app)
   const baseURL = "/backend/s?k="
@@ -90,4 +90,19 @@ test("GET /backend/s returns code 500 upon invalid query", async() => {
   expect(undefinedResponse.statusCode).toEqual(500)
   expect(fiftyOneCharReponse.statusCode).toEqual(500)
   expect(invalidCharResponse.statusCode).toEqual(500)
+})
+
+test("GET [/backend/shoppingCart] gives cookie if unassigned", async () =>{
+  // arrange
+  const api = request(app)
+  // act
+  const response = await api.get("/backend/shoppingCart")
+  const cookie = response.headers["set-cookie"]
+
+  // assert
+  expect(response.body).toEqual(shoppingCarts.empty)
+  expect(cookie).not.toBeNull()
+
+  const secondResponse = await api.get("/backend/shoppingCart").set("Cookie", cookie)
+  expect(secondResponse.headers["set-cookie"]).toEqual(undefined)
 })
