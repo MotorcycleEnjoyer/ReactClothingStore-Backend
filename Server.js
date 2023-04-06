@@ -215,7 +215,7 @@ app.post('/backend/suggestions', function(req,res){
         const searchSuggestions = helper.findSearchSuggestions(phrase)
         return res.send(searchSuggestions)
     }else{
-        res.send("POST/suggestions: Invalid Characters")
+        res.status(500).send("POST/suggestions: Invalid Characters")
     }
 })
 
