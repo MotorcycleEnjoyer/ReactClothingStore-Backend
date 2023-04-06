@@ -184,7 +184,7 @@ app.get("/backend/shoppingCart", async (req, res) => {
 
 app.get('/backend/s', function(req,res){
     const query = helper.getQueryFromUrl(req.url)
-    if(query === undefined || query.length > 50){
+    if(query === undefined || query.length > 50 || query.length === 0){
         return res.status(500).send("Invalid Query")
     }
         
@@ -192,7 +192,7 @@ app.get('/backend/s', function(req,res){
         const searchResults = helper.getProductFromProductDatabase(query)
         return res.send(searchResults)
     }else{
-        res.send("GET/s: INVALID SEARCH TERMS!!!")
+        res.status(500).send("GET/s: INVALID SEARCH TERMS!!!")
     }
     
 })
