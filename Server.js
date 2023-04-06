@@ -222,7 +222,7 @@ app.post('/backend/suggestions', function(req,res){
 app.post('/backend/addToCart', async function(req,res){
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
-        res.send("Invalid cookie.")
+        return res.send("Invalid cookie.")
 
     const {productId, newUserChoices, amount } = req.body
     
