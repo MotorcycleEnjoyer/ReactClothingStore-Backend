@@ -207,7 +207,7 @@ app.get('/backend/p/*/id/*', function(req,res){
 
 app.post('/backend/suggestions', function(req,res){
     const phrase = req.body.searchTerm
-    if(phrase === undefined || phrase.length > 50)
+    if(phrase === undefined || phrase.length > 50 || phrase.length === 0)
     {
         return res.status(500).send("Invalid Query")
     }
