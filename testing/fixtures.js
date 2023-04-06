@@ -126,4 +126,11 @@ const searchResults = {
     ]
 }
 
-module.exports = searchResults
+const shoppingCarts = {
+    "empty": {
+        type: "anonymous",
+        shoppingCart: []
+    }
+}
+
+module.exports = {searchResults, shoppingCarts}
