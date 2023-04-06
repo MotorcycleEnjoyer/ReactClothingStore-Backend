@@ -56,7 +56,7 @@ test('POST /backend/suggestions searchTerm(undefined || len>50 || len==0 || Inva
   expect(emptyResponse.statusCode).toEqual(500)
 })
 
-test("POST /backend/s returns search results", async() => {
+test("GET /backend/s returns search results", async() => {
   // arrange
   const api = request(app)
   const baseURL = "/backend/s?k="
@@ -72,7 +72,7 @@ test("POST /backend/s returns search results", async() => {
   expect(genericResponse.body).toEqual(searchResults.generic)
 })
 
-test("POST /backend/s returns code 500 upon invalid query", async() => {
+test("GET /backend/s returns code 500 upon invalid query", async() => {
   // arrange
   const api = request(app)
   const baseURL = "/backend/s?k="
