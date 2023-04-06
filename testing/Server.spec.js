@@ -1,5 +1,6 @@
 const app = require("../Server")
 const request = require('supertest');
+const searchResults = require("./fixtures")
 
 test('GET /test responds with hello world', async () => {
   // arrange
@@ -53,4 +54,40 @@ test('POST /backend/suggestions searchTerm(undefined || len>50 || len==0 || Inva
   expect(fiftyOneCharReponse.statusCode).toEqual(500)
   expect(invalidCharResponse.statusCode).toEqual(500)
   expect(emptyResponse.statusCode).toEqual(500)
+})
+
+test("POST /backend/s returns search results", async() => {
+  // arrange
+  const api = request(app)
+  const baseURL = "/backend/s?k="
+  const shirtSearch = `${baseURL}shirt`
+  const genericSearch = `${baseURL}generic`
+
+  // act
+  const shirtResponse = await api.get(shirtSearch)
+  const genericResponse = await api.get(genericSearch)
+
+  // assert
+  expect(shirtResponse.body).toEqual(searchResults.shirt)
+  expect(genericResponse.body).toEqual(searchResults.generic)
+})
+
+test("POST /backend/s returns code 500 upon invalid query", async() => {
+  // arrange
+  const api = request(app)
+  const baseURL = "/backend/s?k="
+
+  const undefinedPayload = `${baseURL}`
+  const fiftyOneCharPayload = `${baseURL}LoremIpsumLoremIpsumLoremIpsumLoremIpsumLoremIpsum5`
+  const nonNumericAlphabeticPayload = `${baseURL}abc123@#$%^&!@)((*`
+
+  // act
+  const undefinedResponse = await api.get(undefinedPayload)
+  const fiftyOneCharReponse = await api.get(fiftyOneCharPayload)
+  const invalidCharResponse = await api.get(nonNumericAlphabeticPayload)
+
+  // assert
+  expect(undefinedResponse.statusCode).toEqual(500)
+  expect(fiftyOneCharReponse.statusCode).toEqual(500)
+  expect(invalidCharResponse.statusCode).toEqual(500)
 })
