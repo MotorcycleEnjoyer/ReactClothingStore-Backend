@@ -1,6 +1,6 @@
 const app = require("../Server")
 const request = require('supertest');
-const {searchResults, shoppingCarts} = require("./fixtures")
+const {searchResults, shoppingCarts, addToCart} = require("./fixtures")
 
 test('GET /test responds with hello world', async () => {
   // arrange
@@ -105,4 +105,18 @@ test("GET [/backend/shoppingCart] gives cookie if unassigned", async () =>{
 
   const secondResponse = await api.get("/backend/shoppingCart").set("Cookie", cookie)
   expect(secondResponse.headers["set-cookie"]).toEqual(undefined)
+})
+
+test("POST [/backend/addToCart] adds an item to cart, when you have a cookie assigned to it.", async () =>{
+  // arrange
+  const api = request(app)
+  const newCookie = (await api.get("/backend/shoppingCart")).headers["set-cookie"]
+
+  // act
+  const noCookieResponse = await api.post("/backend/addToCart").send(addToCart.sampleOneRequest)
+  const cookieResponse = await api.post("/backend/addToCart").send(addToCart.sampleOneRequest).set("Cookie", newCookie)
+
+  // assert
+  expect(noCookieResponse.statusCode).toEqual(500)
+  expect(cookieResponse.body).toEqual(addToCart.sampleOneResponse)
 })
