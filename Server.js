@@ -168,6 +168,9 @@ app.get("/backend/shoppingCart", async (req, res) => {
             const cart = { shoppingCart: newAnon.shoppingCart, type: "anonymous" }
             return res.status(200).send(cart)
         } else {
+            // TESTING ONLY
+            await setVars()
+            // TESTING ONLY
             const temporaryUserId = uuidv4()
             helper.createAnonymousSession(temporaryUserId, sessions)
             helper.createAnonymousShoppingCart(temporaryUserId, allUserData)
