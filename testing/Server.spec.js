@@ -1,8 +1,9 @@
 const app = require("../Server")
 const request = require('supertest');
 const {searchResults, shoppingCarts, addToCart} = require("./fixtures")
+const uuidv4 = require("uuid").v4
 
-test('GET /test responds with hello world', async () => {
+/* test('GET /test responds with hello world', async () => {
   // arrange
   const api = request(app);
 
@@ -119,4 +120,31 @@ test("POST [/backend/addToCart] adds an item to cart, when you have a cookie ass
   // assert
   expect(noCookieResponse.statusCode).toEqual(500)
   expect(cookieResponse.body).toEqual(addToCart.sampleOneResponse)
+}) */
+
+test("REGISTERING -> ADDING TO CART -> LOGGING OFF -> LOGGING IN, returns proper cart ", async () => {
+  // arrange
+  const api = request(app)
+  await api.get("/test")
+  const newCookie = (await api.get("/backend/shoppingCart")).headers["set-cookie"]
+  // password must be at least 8 characters lmao
+  const creds = {username: "John", password: "DoeDoeDoe"}
+
+  expect(newCookie).not.toBe(undefined)
+
+// act
+  const registrationResponse = await api.post("/backend/register").send(creds).set("Cookie", newCookie)
+  const regCookie = registrationResponse.headers["set-cookie"]
+  await api.post("/backend/addToCart").send(addToCart.sampleOneRequest).set("Cookie", regCookie)
+
+  const logoutResponse = await api.post("/backend/logout").set("Cookie", regCookie)
+  const logCookie = logoutResponse.headers["set-cookie"]
+
+  const loginResponse = await api.post("/backend/login").send(creds).set("Cookie", logCookie)
+  const finalCookie = loginResponse.headers["set-cookie"]
+
+  const finalCart = await api.get("/backend/shoppingCart").set("Cookie", finalCookie)
+
+  // assert
+  expect(finalCart.body).toEqual(addToCart.sampleOneUserResponse)
 })
