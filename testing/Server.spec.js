@@ -1,9 +1,11 @@
 const app = require("../Server")
 const request = require('supertest');
-const {searchResults, shoppingCarts, addToCart} = require("./fixtures")
+const {searchResults, shoppingCarts, addToCart} = require("./helpers/fixtures/HTTP_fixtures")
 const uuidv4 = require("uuid").v4
 
-/* test('GET /test responds with hello world', async () => {
+/* 
+
+test('GET /test responds with hello world', async () => {
   // arrange
   const api = request(app);
 
@@ -120,7 +122,7 @@ test("POST [/backend/addToCart] adds an item to cart, when you have a cookie ass
   // assert
   expect(noCookieResponse.statusCode).toEqual(500)
   expect(cookieResponse.body).toEqual(addToCart.sampleOneResponse)
-}) */
+}) 
 
 test("REGISTERING -> ADDING TO CART -> LOGGING OFF -> LOGGING IN, returns proper cart ", async () => {
   // arrange
@@ -148,3 +150,7 @@ test("REGISTERING -> ADDING TO CART -> LOGGING OFF -> LOGGING IN, returns proper
   // assert
   expect(finalCart.body).toEqual(addToCart.sampleOneUserResponse)
 })
++
+*/
+
+test.todo("Registering with same username causes failure")
