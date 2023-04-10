@@ -1,4 +1,3 @@
-// const mongoHelper = require("../mongoHelper.js")
 const { connect, disconnect } = require("./helpers/mongoMemory.js")
 const User = require("../databaseLogic/User.js")
 const userFixtures = require("./helpers/fixtures/UserFixtures.js")
@@ -48,7 +47,33 @@ describe("mongodb USER tests", () => {
         expect(shoppingCart).toEqual([{...userFixtures.productOne, amount: 2}, userFixtures.productTwo])
     })
 
-    test("expect deleteCartItem to delete ONLY the specified item", async() => {
+    test("expect [editing B to become A], to [delete B] and [increment A]", async () => {
+        // arrange
+        let productId, oldUserChoices, newUserChoices, index, amount
+
+        productId = userFixtures.productTwo.details.id
+        oldUserChoices = userFixtures.productTwo.userSelectedParameters
+        newUserChoices = userFixtures.productOne.userSelectedParameters
+        index = 1
+        amount = 25
+        const dataObject = {productId, oldUserChoices, newUserChoices, index, amount}
+
+        // act
+        await User.editCartItem(dataObject, "Bob")
+        const person = await User.getUser("Bob")
+        const shoppingCart = person.shoppingCart
+
+        // assert
+        expect(shoppingCart).toEqual([{...userFixtures.productOne, amount: 27}])
+    })
+
+    test("expect deleteCartItem to delete specified item", async() => {
+        await User.addToCart(userFixtures.productTwo, "Bob")
+        const setupPerson = await User.getUser("Bob")
+        const setupShoppingCart = setupPerson.shoppingCart
+        expect(setupShoppingCart).toEqual([{...userFixtures.productOne, amount:27}, userFixtures.productTwo])
+        
+
         await User.deleteCartItem(0, "Bob")
 
         const person = await User.getUser("Bob")
