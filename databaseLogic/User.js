@@ -74,4 +74,47 @@ function areIdentical(oldData, newData){
     return allMatch
 }
 
-module.exports = {getUser, createAndReturnUser, getAllUsers, addToCart, deleteCartItem}
+async function editCartItem (dataObject, username) {
+    let user = await getUser(username)
+    const { productId, oldUserChoices, newUserChoices, index, amount } = dataObject
+    if(index < 0 || index >= user.shoppingCart.length){
+        return user.shoppingCart
+    }
+    let tempArr = user.shoppingCart
+
+    // setting amount to different value, on source item
+    if (areIdentical(oldUserChoices, newUserChoices)) {
+        user.shoppingCart[index].amount = amount
+        await user.save()
+        return user.shoppingCart
+    } else {
+        const indexOfIdenticalMatch = tempArr.findIndex((item) => {
+            if (item.details.id === productId)
+                if (areIdentical(item.userSelectedParameters, newUserChoices)) { 
+                    return item
+                }
+        })
+        const itemExistsInAnotherIndex = indexOfIdenticalMatch !== -1
+        if( itemExistsInAnotherIndex ) {
+            // incrementing amount of a DIFFERENT ITEM than source item
+            tempArr[indexOfIdenticalMatch].amount += amount
+        } else {
+            // CREATING NEW ITEM, because sourceItem and allother did not match with parameters
+            const dataObject = { ...dummyProductDB.db.filter(item => item.details.id === productId)[0], userSelectedParameters: newUserChoices, amount: amount }
+            tempArr.push(dataObject)
+        }
+        // DELETE SOURCE ITEM, because we moved that data into a different object now.
+        tempArr = tempArr.filter((item, filterIndex) => {
+            if ( filterIndex !== index ) {
+                return item
+            }
+        })
+        user.shoppingCart = tempArr
+        await user.save()
+        return user.shoppingCart
+    }
+}
+
+
+
+module.exports = {getUser, createAndReturnUser, getAllUsers, addToCart, deleteCartItem, editCartItem}
