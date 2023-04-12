@@ -13,3 +13,5 @@
 ratings.json
 
 /build
+
+.env
