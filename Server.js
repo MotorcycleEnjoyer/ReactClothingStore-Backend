@@ -2,13 +2,16 @@ const express = require('express')
 const app = express()
 const uuidv4 = require('uuid').v4
 const bcrypt = require('bcrypt')
+const dotenv = require("dotenv")
+dotenv.config()
 const saltRounds = 12
 const fs = require("fs")
 const cors = require("cors")
 const helper = require("./helper")
 const mongoHelper = require("./mongoHelper")
-const DATABASE_URL = "INVALID_MONGO_URL__mongodb://127.0.0.1:27017/react_clothing_store_db"
+const DATABASE_URL = process.env.NODE_ENV === "production" ? process.env.DB_PROD : process.env.DB_TEST
 const path = require("path")
+const email = require("./emailLogic/nodeMailerDemo")
 
 const corsOptions = {
   origin: 'http://localhost:3000',
@@ -147,7 +150,6 @@ async function getShoppingCart(sessionId){
             return { shoppingCart: user.shoppingCart, type: "anonymous" }
         }else{
             const user = helper.getUserByCartId(sessionObj.cartId, allUserData)
-            console.log(user)
             return { shoppingCart: user.shoppingCart, type: "user"}
         }
     }
@@ -499,7 +501,7 @@ app.post("/backend/register", async (req,res) => {
                     saveSessions()
                 } else {
                     const permanentCartId = uuidv4()
-                    allUserData.registeredUsers.push({username: username, password: hash, reviewsAndRatings: {}, cartId: permanentCartId, shoppingCart: []})
+                    allUserData.registeredUsers.push({username: username, password: hash, reviewsAndRatings: {}, cartId: permanentCartId, shoppingCart: [], orderHistory: {}})
                     sessions[newSessionToken] = { type:"user", cartId: permanentCartId}
                     deleteTempUserCart(sessionId)
                     deleteOldSession(sessionId)
@@ -636,6 +638,32 @@ app.post('/backend/reviews', async (req, res) => {
     }else{
         res.status(500)
         return res.send("You are not logged in!")
+    }
+})
+
+app.post("/backend/submitCart", async (req, res) => {
+    const response = await email.sendPresetMessage()
+    console.log(response)
+    res.send(response)
+})
+
+app.get("/backend/myDetails", async (req, res) => {
+    const sessionId = getSession(req.headers.cookie)
+    if(sessionId === undefined)
+        return res.send("Invalid cookie.")
+
+    if(connectedToMongoDB) {
+        
+
+    } else {
+        if(sessions[sessionId].type === "user")
+    {
+        const user = helper.getUserByCartId(sessions[sessionId].cartId, allUserData)
+        const data = {username: user.username, reviewsAndRatings: user.reviewsAndRatings, shoppingCart: user.shoppingCart}
+        return res.send(data)
+    } else {
+        return res.status(403).send("You must login to access this page.")
+    }
     }
 })
 
