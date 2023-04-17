@@ -8,7 +8,8 @@ const userDataSchema = new mongoose.Schema({
         review: String, 
         rating: Number
     }],
-    shoppingCart: []
+    shoppingCart: [],
+    purchaseHistory: [],
 })
 const UserModel = mongoose.model('UserData', userDataSchema)
 
