@@ -1,31 +1,8 @@
 const mongoose = require("mongoose")
 const uuidv4 = require('uuid').v4
-const helper = require("./helper")
-
-const userDataSchema = new mongoose.Schema({
-    username: String,
-    password: String,
-    reviews: [{ 
-        productId: Number, 
-        review: String, 
-        rating: Number
-    }],
-    shoppingCart: []
-})
-const UserModel = mongoose.model('UserData', userDataSchema)
-
-const anonymousCartSchema = new mongoose.Schema({
-    temporaryAnonCookie: String,
-    shoppingCart: []
-})
-const AnonModel = new mongoose.model("AnonCart", anonymousCartSchema)
-
-const ratingsAndReviewsSchema = new mongoose.Schema({
-    productId: Number, 
-    reviewArray: [String],
-    ratingArray: [Number]
-})
-const FeedbackModel = new mongoose.model("feedback", ratingsAndReviewsSchema)
+const dummyProductDB = require('./dummyProductDB')
+const User = require("./databaseLogic/User")
+const AnonUser = require("./databaseLogic/Anonymous")
 
 async function connectToDatabase (location) {
     try {
@@ -57,15 +34,13 @@ async function getAllReviewsForProduct (productObj) {
 }
 
 async function getUser (idOrAnonCookieOrUsername) {
-    const { _id, temporaryAnonCookie, username } = idOrAnonCookieOrUsername
+    const { temporaryAnonCookie, username } = idOrAnonCookieOrUsername
     let user = null
 
     if (username !== undefined) {
-        user = await UserModel.findOne({ username: username })
+        user = await User.getUser(username)
     } else if (temporaryAnonCookie !== undefined) {
-        user = await AnonModel.findOne( { temporaryAnonCookie })
-    } else if (_id !== undefined){
-        user = await UserModel.findById( { id: _id } )
+        user = await AnonUser.getUser(temporaryAnonCookie)
     }
     return user
 }
@@ -124,81 +99,6 @@ async function addItemToUserReview (newReview, idOrAnonCookie) {
     }
 }
 
-async function addItemToMongoCart (newProduct, idOrAnonCookie) {
-    let user = await getUser(idOrAnonCookie)
-    let tempArr = user.shoppingCart
-
-    const indexOfIdenticalMatch = tempArr.findIndex((item) => {
-        if (item.details.id === newProduct.details.id)
-            if (areIdentical(item.userSelectedParameters, newProduct.userSelectedParameters)) { 
-                return item
-            }
-    })
-    if( indexOfIdenticalMatch === -1) {
-        tempArr.push(newProduct)
-        user.shoppingCart = tempArr
-    } else {
-        tempArr[indexOfIdenticalMatch].amount += newProduct.amount
-        user.shoppingCart[indexOfIdenticalMatch] = tempArr[indexOfIdenticalMatch]
-    }
-    await user.save()
-    return user.shoppingCart
-}
-
-async function editItemInMongoCart (dataObject, idOrAnonCookie) {
-    let user = await getUser(idOrAnonCookie)
-    const { productId, oldUserChoices, newUserChoices, index, amount } = dataObject
-    if(index < 0 || index >= user.shoppingCart.length){
-        return user.shoppingCart
-    }
-    let tempArr = user.shoppingCart
-
-    // setting amount to different value, on source item
-    if (areIdentical(oldUserChoices, newUserChoices)) {
-        user.shoppingCart[index].amount = amount
-        await user.save()
-        return user.shoppingCart
-    } else {
-        const indexOfIdenticalMatch = tempArr.findIndex((item) => {
-            if (item.details.id === productId)
-                if (areIdentical(item.userSelectedParameters, newUserChoices)) { 
-                    return item
-                }
-        })
-        const itemExistsInAnotherIndex = indexOfIdenticalMatch !== -1
-        if( itemExistsInAnotherIndex ) {
-            // incrementing amount of a DIFFERENT ITEM than source item
-            tempArr[indexOfIdenticalMatch].amount += amount
-        } else {
-            // CREATING NEW ITEM, because sourceItem and allother did not match with parameters
-            const dataObject = { ...helper.getProductFromProductDatabase(null, productId), userSelectedParameters: newUserChoices, amount: amount }
-            tempArr.push(dataObject)
-        }
-        // DELETE SOURCE ITEM, because we moved that data into a different object now.
-        tempArr = tempArr.filter((item, filterIndex) => {
-            if ( filterIndex !== index ) {
-                return item
-            }
-        })
-        user.shoppingCart = tempArr
-        await user.save()
-        return user.shoppingCart
-    }
-}
-
-async function deleteItemInMongoCart (indexToDelete, idOrAnonCookie) {
-    let user = await getUser(idOrAnonCookie)
-    if(indexToDelete < 0 || indexToDelete >= user.shoppingCart.length){
-        return user.shoppingCart
-    }
-    let tempArr = user.shoppingCart.filter((item, index) => {
-        return index !== indexToDelete && item
-    })
-    user.shoppingCart = tempArr
-    await user.save()
-    return user.shoppingCart
-}
-
 async function clearCartInMongo (idOrAnonCookie) {
     let user = await getUser(idOrAnonCookie)
     user.shoppingCart = []
@@ -211,38 +111,76 @@ async function createAnon () {
         temporaryAnonCookie: uuidv4(),
         shoppingCart: []
     }
-    const anon = await createAndSaveRecord(AnonModel, args)
+    const anon = await AnonUser.createAndReturnUser(args)
     return anon
-}
-
-async function deleteAnon (cookie) {
-    const { temporaryAnonCookie } = cookie
-    if(temporaryAnonCookie === null)
-        return null
-    
-    const result = await AnonModel.deleteOne({ temporaryAnonCookie })
-    return result.deletedCount === 1
 }
 
 async function createUserAndDeleteAnon (userCredentials, temporaryAnonCookie) {
     const { username, password } = userCredentials
-    AnonModel.deleteOne({ temporaryAnonCookie })
-    const userRecord = await createAndSaveRecord(UserModel, {
-        username, 
-        password,
-        reviews: [],
-        shoppingCart: []
-    })
-    return userRecord
+    if(!username || !password || !temporaryAnonCookie) {
+        throw new Error("Undefined Credentials!")
+    } else {
+        const payload = {
+            username, 
+            password,
+            reviews: [],
+            shoppingCart: [],
+            purchaseHistory: []
+        }
+        const newUser = await User.createAndReturnUser(payload)
+        await AnonUser.deleteAnon({ temporaryAnonCookie })
+        return newUser
+    }
 }
 
-async function createAndSaveRecord (mongoModel, newParameters) {
-    const record = new mongoModel(newParameters)
-    await record.save()
-    return record
+async function addItemToMongoCart(product, credentials) {
+    const { temporaryAnonCookie, username } = credentials
+    if (!product) {
+        throw new Error("Can't add nothing to cart... Pick an item!")
+    }
+
+    if (!username) {
+        if (!temporaryAnonCookie) {
+            throw new Error("Can't add to nobody's cart. Be a user next time!")
+        } else {
+            await AnonUser.addToCart(product, { temporaryAnonCookie })
+        }
+    } else {
+        await User.addToCart(product, { username })
+    }
 }
 
-module.exports = { createAndSaveRecord, createUserAndDeleteAnon, createAnon, 
-    deleteItemInMongoCart, editItemInMongoCart, addItemToMongoCart,
+async function editItemInMongoCart (payload, credentials) {
+    const { username, temporaryAnonCookie } = credentials
+
+    if (!username) {
+        if (!temporaryAnonCookie) {
+            throw new Error("Can't add to nobody's cart. Be a user next time!")
+        } else {
+            await AnonUser.editCartItem(payload, { temporaryAnonCookie })
+        }
+    } else {
+        await User.editCartItem(payload, { username })
+    }
+}
+
+async function deleteItemInMongoCart (index, credentials) {
+    const { temporaryAnonCookie, username } = credentials
+    if (!index) {
+        throw new Error("Can't delete an unspecified index... Pick an item!")
+    }
+
+    if (!username) {
+        if (!temporaryAnonCookie) {
+            throw new Error("Can't delete if no account...")
+        } else {
+            await AnonUser.deleteCartItem(index, { temporaryAnonCookie })
+        }
+    } else {
+        await User.deleteCartItem(index, { username })
+    }
+}
+
+module.exports = { createUserAndDeleteAnon, createAnon, editItemInMongoCart,
     connectToDatabase, getUser, addItemToUserReview, getAllReviewsForProduct,
-    clearCartInMongo, deleteAnon }
+    clearCartInMongo, deleteItemInMongoCart, addItemToMongoCart }
