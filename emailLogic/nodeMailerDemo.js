@@ -41,12 +41,12 @@ const nodemailer = require("nodemailer")
 const dummyMessage = {
     from: `Sender Name <sender@example.com`,
     to: `Recipient <recipient@example.com>`,
-    subject: `Test`,
-    text: `Hello to myself`,
+    subject: `Email from Node Server`,
+    text: `Hello to myself, again, from Node Server`,
     html: `
         <div>
             <h1>Hello</h1>
-            <p>Trying to type HTML in a string is frustrating<p>
+            <p>Hope you're having a good morning! :)<p>
         </div>`,
     amp: `<!doctype html>
         <html ⚡4email>
@@ -89,7 +89,7 @@ const testMessage = {
 let mailConfig
 let message
 
-if (process.env.NODE_ENV === 'testing') {
+if (process.env.NODE_ENV === 'test' ) {
     mailConfig = {
         host: process.env.TESTING_EMAIL_HOST,
         port: process.env.TESTING_EMAIL_PORT,
@@ -112,14 +112,20 @@ if (process.env.NODE_ENV === 'testing') {
     process.exit(1)
 }
 
-const transporter = nodemailer.createTransport(mailConfig);
+async function sendPresetMessage() {
+    const transporter = nodemailer.createTransport(mailConfig);
 
+    try {
+        let responseMessage = await transporter.sendMail(message)
+        if(responseMessage.error) { 
+            throw responseMessage.error
+        }
 
-transporter.sendMail(message, (err, info) => {
-    if (err) {
-        console.log(`Error occurred. ${err.message}`)
-        return process.exit(1)
+        return responseMessage.response
+    } catch (err) {
+        console.error(err)
+        return
     }
+}
 
-    console.log(info.response)
-})
+module.exports = { sendPresetMessage }
