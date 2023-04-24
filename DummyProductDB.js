@@ -15,6 +15,7 @@ const db = [
             weight: {grams: 50},
             price: 5.99,
             materials: {polyester: "50%", cotton: "50%"},
+            imageName: "t-shirt-preview.png"
         },
         userSelectedParameters: {},
         amount: 0
@@ -33,6 +34,7 @@ const db = [
             weight: {grams: 50},
             price: 10.99,
             materials: {polyester: "50%", cotton: "50%"},
+            imageName: "t-shirt-preview.png"
         },
         userSelectedParameters: {},
         amount: 0
@@ -53,6 +55,7 @@ const db = [
             weight: {grams: 50},
             price: 3.99,
             materials: {polyester: "50%", cotton: "50%"},
+            imageName: "t-shirt-preview.png"
         },
         userSelectedParameters: {},
         amount: 0
