@@ -491,9 +491,7 @@ app.post("/backend/register", async (req,res) => {
                             username: username, 
                             password: hash
                         }, 
-                        { 
-                            temporaryAnonCookie: sessionId
-                        }
+                        sessionId
                     )
                     const newUser = await mongoHelper.getUser({username})
                     sessions[newSessionToken] = {type: "user", username: newUser.username}
@@ -608,12 +606,15 @@ app.post('/backend/getRatingsAndReviews', async (req, res) => {
 })
 
 app.post('/backend/reviews', async (req, res) => {
-    const { id, review } = req.body
+    const { id, review, starRating } = req.body
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
         res.send("Invalid cookie.")
 
-    if(review === undefined || review === null || review.length > 200){
+    if(!starRating || starRating > 5 || starRating < 0)
+        return res.status(500).send("Invalid Review")
+
+    if(review.length > 200){
         return res.status(500).send("Invalid Review")
     }
     if(sessions[sessionId].type === "user")
@@ -631,9 +632,14 @@ app.post('/backend/reviews', async (req, res) => {
         } else {
             const currProduct = allRatingsAndReviews[id]
             currProduct.reviews.push(review)
+            currProduct.ratings.push(starRating)
             saveAllRatingsAndReviews()
+            const totalRatingsCount = currProduct.ratings.reduce((accumulator, currentItem) => accumulator + currentItem, 0)
+            const averageRating = totalRatingsCount / currProduct.ratings.length
+            console.log(`AVERAGE RATING: [${averageRating}]`)
+            avgRatings[id] = { averageRating: averageRating.toFixed(2) }
             const reviews = Array.from(helper.limitedArrayPull(currProduct.reviews, i => i.length > 10, 10))
-            res.send({reviews})
+            res.send({reviews, averageRating})
         }
     }else{
         res.status(500)
@@ -665,6 +671,12 @@ app.get("/backend/myDetails", async (req, res) => {
         return res.status(403).send("You must login to access this page.")
     }
     }
+})
+
+app.get("/backend/productImages/:imageName", async (req, res) => {
+    const { imageName } = req.params
+    const imagePath = path.resolve(__dirname, "ProductImages", imageName)
+    res.sendFile(imagePath)
 })
 
 app.get("/*", (req, res) => {
