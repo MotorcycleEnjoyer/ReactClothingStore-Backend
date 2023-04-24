@@ -47,13 +47,14 @@ function* limitedArrayPull(array, condition, maxSize) {
       maxSize = array.length;
     }
     let count = 0;
-    let i = 0;
-    while ( count < maxSize && i < array.length ) {
+    let i = array.length - 1;
+    // while ( count < maxSize && i < array.length ) {
+    while ( count < maxSize && i >= 0 ) {
       if (condition(array[i])) {
         yield array[i];
         count++;
       }
-      i++;
+      i--;
     }
   }
 
