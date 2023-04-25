@@ -8,6 +8,7 @@
     "mongoose": "^7.0.2",
     "nodemailer": "^6.9.1",
     "rate-limiter-flexible": "^2.4.1",
+    "stripe": "^12.2.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
