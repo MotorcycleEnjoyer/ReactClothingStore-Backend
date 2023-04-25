@@ -12,6 +12,7 @@ const mongoHelper = require("./mongoHelper")
 const DATABASE_URL = process.env.NODE_ENV === "production" ? process.env.DB_PROD : process.env.DB_TEST
 const path = require("path")
 const email = require("./emailLogic/nodeMailerDemo")
+const stripe = require("stripe")(process.env.STRIPE_PRIVATE_KEY)
 
 const corsOptions = {
   origin: 'http://localhost:3000',
@@ -203,7 +204,6 @@ app.get('/backend/s', function(req,res){
 })
 
 app.get('/backend/p/*/id/*', function(req,res){
-
     const productId = helper.getProductIdFromUrl(req.url)
     const searchResults = helper.getProductFromProductDatabase("NoName", productId)
 
@@ -499,7 +499,7 @@ app.post("/backend/register", async (req,res) => {
                     saveSessions()
                 } else {
                     const permanentCartId = uuidv4()
-                    allUserData.registeredUsers.push({username: username, password: hash, reviewsAndRatings: {}, cartId: permanentCartId, shoppingCart: [], orderHistory: {}})
+                    allUserData.registeredUsers.push({username: username, password: hash, reviewsAndRatings: {}, cartId: permanentCartId, shoppingCart: [], orderHistory: []})
                     sessions[newSessionToken] = { type:"user", cartId: permanentCartId}
                     deleteTempUserCart(sessionId)
                     deleteOldSession(sessionId)
@@ -677,6 +677,85 @@ app.get("/backend/productImages/:imageName", async (req, res) => {
     const { imageName } = req.params
     const imagePath = path.resolve(__dirname, "ProductImages", imageName)
     res.sendFile(imagePath)
+})
+
+app.post("/backend/stripeCheckout", async (req, res) => {
+    const sessionId = getSession(req.headers.cookie)
+    const sessionObj = sessions[sessionId]
+    if(sessionId === undefined || sessionObj === undefined)
+        return res.send("Invalid cookie.")
+
+    if(!req.body || req.body === {})
+        return res.send("Invalid order.")
+
+/*     const properData = req.body.map(item => {
+        const product = helper.getProductFromProductDatabase(null, item.details.id)
+        return {
+            price_data: {
+                currency: 'usd',
+                product_data: {
+                    name: product.details.name,
+
+                },
+                unit_amount: (product.details.price * 100)
+            },
+            quantity: item.amount
+        }
+    })
+
+    console.log(properData)
+    res.send({ url: "/" }) */
+
+    try {
+        const stripeSession = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            mode: 'payment',
+            line_items: req.body.map(item => {
+                const product = helper.getProductFromProductDatabase(null, item.details.id)
+                return {
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: product.details.name,
+
+                        },
+                        unit_amount: (product.details.price * 100)
+                    },
+                    quantity: item.amount
+                }
+            }),
+            success_url: `${process.env.SERVER_URL}/userPage`,
+            cancel_url: `${process.env.SERVER_URL}/`
+        })
+        res.json({ url: stripeSession.url })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ error: error.message})
+    }
+})
+
+app.post("/backend/submitOrder", async (req, res) => {
+    const sessionId = getSession(req.headers.cookie)
+    const sessionObj = sessions[sessionId]
+    if(sessionId === undefined || sessionObj === undefined)
+        return res.send("Invalid cookie.")
+
+    if(!req.body || req.body === {})
+        return res.send("Invalid order.")
+
+    const data = req.body.map((item, index) => {
+        return {
+            id: item.details.id,
+            userSelectedParameters: item.userSelectedParameters,
+            amount: item.amount
+        }
+    })
+    const user = helper.getUserByCartId(sessionObj.cartId, allUserData)
+    user.orderHistory.push(data)
+    user.shoppingCart.length = 0
+    saveUserData()
+    
+    res.send(await getShoppingCart(sessionId))
 })
 
 app.get("/*", (req, res) => {
