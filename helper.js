@@ -1,4 +1,4 @@
-const dummyProductDB = require('./dummyProductDB')
+const dummyProductDB = require('./DummyProductDB')
 const uuidv4 = require('uuid').v4
 const url = require("url")
 const blockedCharacters = new RegExp("[~`!@#$%^&()_={}\\[\\]\\:;,\\.\\/<>\\\\*\\-+\\?]")
