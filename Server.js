@@ -13,6 +13,37 @@ const DATABASE_URL = process.env.NODE_ENV === "production" ? process.env.DB_PROD
 const path = require("path")
 const email = require("./emailLogic/nodeMailerDemo")
 const stripe = require("stripe")(process.env.STRIPE_PRIVATE_KEY)
+const emailService = require("./emailLogic/nodeMailerDemo")
+const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET
+
+app.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
+    const sig = request.headers['stripe-signature'];
+  
+    let event;
+  
+    try {
+      event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+    } catch (err) {
+      response.status(400).send(`Webhook Error: ${err.message}`);
+      return;
+    }
+  
+    // Handle the event
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        const paymentIntentSucceeded = event.data.object;
+        console.log("PAYMENT SUCCESS!!!")
+        console.log(req.body)
+        // Then define and call a function to handle the event payment_intent.succeeded
+        break;
+      // ... handle other event types
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+  
+    // Return a 200 response to acknowledge receipt of the event
+    response.send();
+  });
 
 const corsOptions = {
   origin: 'http://localhost:3000',
@@ -367,20 +398,20 @@ app.post('/backend/clearCart', async (req, res) => {
 app.post('/backend/login', async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined){
-        return res.send("Invalid cookie.")
+        return res.status(401).send("Invalid cookie.")
     }
     if(sessions[sessionId].type === "user"){
-        return res.send("Already Logged In...")
+        return res.status(403).send("Already Logged In...")
     }
 
     const { username, password } = req.body
 
     if(username === undefined || password === undefined){
-        return res.status(500).send("Login Error.")
+        return res.status(401).send("Login Error.")
     }
 
     if(username.length > 30 || password.length > 30){
-        return res.status(500).send("Login Error")
+        return res.status(401).send("Login Error")
     }
 
     let usernameFound = false 
@@ -401,7 +432,7 @@ app.post('/backend/login', async (req, res) => {
     }
 
     if(!usernameFound) {
-        return res.status(500).send("Login Error")
+        return res.status(401).send("Login Error")
     } else {
         bcrypt.compare(password, comparisonPassword, async (err, result) => {
             if(err){
@@ -419,7 +450,7 @@ app.post('/backend/login', async (req, res) => {
                 }) !== -1
 
                 if(isAlreadyLoggedIn){
-                    res.status(401).send("POST/login: Already logged in!")
+                    res.status(403).send("POST/login: Already logged in!")
                 }
                 if(!isAlreadyLoggedIn){
                     const newSessionToken = uuidv4()
@@ -458,13 +489,13 @@ app.post("/backend/register", async (req,res) => {
     const { username, password } = req.body
 
     if(username === undefined || password === undefined){
-        return res.status(500).send("Error creating account.")
+        return res.status(401).send("Error creating account.")
     }
     if(password.length < 8){
-        return res.status(500).send("Password must be at least 8 characters.")
+        return res.status(401).send("Password must be at least 8 characters.")
     }
     if(password.length > 30 || username.length > 30){
-        return res.status(500).send("Error creating account.")
+        return res.status(401).send("Error creating account.")
     }
 
     let nameIsAvailable = false
@@ -511,7 +542,7 @@ app.post("/backend/register", async (req,res) => {
             })
         });
     }else{
-        return res.status(500).send("Username is taken.")
+        return res.status(401).send("Username is taken.")
     }
 })
 
@@ -539,8 +570,7 @@ app.post('/backend/logout', async (req,res) => {
             return res.send("POST/logout: Logged out successfully!")
         }
     }else{
-        res.status(200)
-        return res.send("POST/logout: You are not logged in!")
+        return res.status(403).send("POST/logout: You are not logged in!")
     }
 })
 
@@ -688,24 +718,6 @@ app.post("/backend/stripeCheckout", async (req, res) => {
     if(!req.body || req.body === {})
         return res.send("Invalid order.")
 
-/*     const properData = req.body.map(item => {
-        const product = helper.getProductFromProductDatabase(null, item.details.id)
-        return {
-            price_data: {
-                currency: 'usd',
-                product_data: {
-                    name: product.details.name,
-
-                },
-                unit_amount: (product.details.price * 100)
-            },
-            quantity: item.amount
-        }
-    })
-
-    console.log(properData)
-    res.send({ url: "/" }) */
-
     try {
         const stripeSession = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
@@ -728,11 +740,34 @@ app.post("/backend/stripeCheckout", async (req, res) => {
             cancel_url: `${process.env.SERVER_URL}/`
         })
         res.json({ url: stripeSession.url })
+/*         if(stripeSession.url === `${process.env.SERVER_URL}/userPage`) {
+            console.log("STRIPE SUCCESS MESSAGE!!!")
+            // send email confirmation
+            emailService.sendPurchaseReceipt(req.body)
+            // Push order to orderhistory array
+            const basicOrder = returnBasicOrder(req.body)
+            const user = helper.getUserByCartId(sessionObj.cartId, allUserData)
+            user.orderHistory.push(basicOrder)
+            user.shoppingCart.length = 0
+            saveUserData()
+            // clear shopping cart
+        } */
     } catch (error) {
         console.error(error)
         res.status(500).json({ error: error.message})
     }
 })
+
+function returnBasicOrder(shoppingCart) {
+    return shoppingCart.map((item, index) => {
+        return {
+            id: item.details.id,
+            userSelectedParameters: item.userSelectedParameters,
+            amount: item.amount,
+            pricePerItem: item.details.price
+        }
+    })
+}
 
 app.post("/backend/submitOrder", async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
@@ -743,13 +778,8 @@ app.post("/backend/submitOrder", async (req, res) => {
     if(!req.body || req.body === {})
         return res.send("Invalid order.")
 
-    const data = req.body.map((item, index) => {
-        return {
-            id: item.details.id,
-            userSelectedParameters: item.userSelectedParameters,
-            amount: item.amount
-        }
-    })
+    const shoppingCart = await getShoppingCart(sessionId)
+    const data = returnBasicOrder(req.body)
     const user = helper.getUserByCartId(sessionObj.cartId, allUserData)
     user.orderHistory.push(data)
     user.shoppingCart.length = 0
