@@ -258,7 +258,7 @@ app.post('/backend/suggestions', function(req,res){
 app.post('/backend/addToCart', async function(req,res){
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
-        return res.status(500).send("Invalid cookie.")
+        return res.status(401).send("Invalid cookie.")
 
     const {productId, newUserChoices, amount } = req.body
     
@@ -299,7 +299,7 @@ app.post('/backend/addToCart', async function(req,res){
 app.post('/backend/editCartItem', async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
-        res.send("POST/editCartItem: Invalid cookie.")
+        res.status(401).send("POST/editCartItem: Invalid cookie.")
 
     const {productId, oldUserChoices, newUserChoices, index, amount } = req.body
     if( 
@@ -348,7 +348,7 @@ app.post('/backend/editCartItem', async (req, res) => {
 app.post('/backend/deleteCartItem', async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined){
-        return res.send("POST/deleteCartItem: Invalid cookie.")
+        return res.status(401).send("POST/deleteCartItem: Invalid cookie.")
     }
     
     const {indexOfCartItem} = req.body
@@ -376,7 +376,7 @@ app.post('/backend/deleteCartItem', async (req, res) => {
 app.post('/backend/clearCart', async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined){
-        return res.send("Invalid cookie.")
+        return res.status(401).send("Invalid cookie.")
     }
     if (connectedToMongoDB) { 
         if(sessions[sessionId].type === "anonymous"){
@@ -392,7 +392,6 @@ app.post('/backend/clearCart', async (req, res) => {
         saveUserData()
         return res.status(200).send(await getShoppingCart(sessionId))
     }
-    
 })
 
 app.post('/backend/login', async (req, res) => {
@@ -407,11 +406,11 @@ app.post('/backend/login', async (req, res) => {
     const { username, password } = req.body
 
     if(username === undefined || password === undefined){
-        return res.status(401).send("Login Error.")
+        return res.status(400).send("Login Error.")
     }
 
     if(username.length > 30 || password.length > 30){
-        return res.status(401).send("Login Error")
+        return res.status(400).send("Login Error")
     }
 
     let usernameFound = false 
@@ -432,7 +431,7 @@ app.post('/backend/login', async (req, res) => {
     }
 
     if(!usernameFound) {
-        return res.status(401).send("Login Error")
+        return res.status(400).send("Login Error")
     } else {
         bcrypt.compare(password, comparisonPassword, async (err, result) => {
             if(err){
@@ -450,7 +449,7 @@ app.post('/backend/login', async (req, res) => {
                 }) !== -1
 
                 if(isAlreadyLoggedIn){
-                    res.status(403).send("POST/login: Already logged in!")
+                    res.status(403).send("Already logged in!")
                 }
                 if(!isAlreadyLoggedIn){
                     const newSessionToken = uuidv4()
@@ -467,7 +466,7 @@ app.post('/backend/login', async (req, res) => {
                         saveSessions(); saveUserData();
                     }
                     res.set('Set-Cookie', `session=${newSessionToken}`)
-                    res.status(200).send("POST/login: Logged in successfuly!")
+                    res.status(200).send("Logged in successfuly!")
                 }
             }else{
                 console.log("POST/login: bad creds BECAUSE BCRYPT FAILED")
@@ -480,22 +479,22 @@ app.post('/backend/login', async (req, res) => {
 app.post("/backend/register", async (req,res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined){
-        return res.send("Invalid cookie.")
+        return res.status(401).send("Invalid cookie.")
     }
     if(sessions[sessionId].type === "user"){
-        return res.send("Already Logged In...")
+        return res.status(403).send("Already Logged In...")
     }
 
     const { username, password } = req.body
 
     if(username === undefined || password === undefined){
-        return res.status(401).send("Error creating account.")
+        return res.status(400).send("Error creating account.")
     }
     if(password.length < 8){
-        return res.status(401).send("Password must be at least 8 characters.")
+        return res.status(400).send("Password must be at least 8 characters.")
     }
     if(password.length > 30 || username.length > 30){
-        return res.status(401).send("Error creating account.")
+        return res.status(400).send("Error creating account.")
     }
 
     let nameIsAvailable = false
@@ -538,18 +537,18 @@ app.post("/backend/register", async (req,res) => {
                 }
 
                 res.set('Set-Cookie', `session=${newSessionToken}`)
-                return res.status(200).send("POST/register: Registered Successfully!")
+                return res.status(201).send("POST/register: Registered Successfully!")
             })
         });
     }else{
-        return res.status(401).send("Username is taken.")
+        return res.status(500).send("Username is taken.")
     }
 })
 
 app.post('/backend/logout', async (req,res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
-        res.send("Invalid cookie.")
+        res.status(401).send("Invalid cookie.")
 
     if(sessions[sessionId].type === "user")
     {
@@ -570,7 +569,7 @@ app.post('/backend/logout', async (req,res) => {
             return res.send("POST/logout: Logged out successfully!")
         }
     }else{
-        return res.status(403).send("POST/logout: You are not logged in!")
+        return res.status(401).send("POST/logout: You are not logged in!")
     }
 })
 
@@ -578,7 +577,7 @@ app.post('/backend/ratings', async (req,res) => {
     const {rating, id} = req.body
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
-        res.send("Invalid cookie.")
+        res.status(401).send("Invalid cookie.")
 
     if(sessions[sessionId].type === "user")
     {
@@ -603,17 +602,15 @@ app.post('/backend/ratings', async (req,res) => {
             avgRatings[id] = { averageRating: averageRating.toFixed(2) }
             return res.send({averageRating})
         }
-        
     }else{
-        res.status(500)
-        return res.send("You are not logged in!")
+        return res.status(401).send("You are not logged in!")
     }
 })
 
 app.post('/backend/getRatingsAndReviews', async (req, res) => {
     const { id } = req.body
     if(id === undefined){
-        return res.status(500).send("Invalid Query.")
+        return res.status(400).send("Invalid Query.")
     }
     if (connectedToMongoDB) {
         const currProduct = await mongoHelper.getAllReviewsForProduct({ productId: parseInt(id) })
@@ -639,13 +636,13 @@ app.post('/backend/reviews', async (req, res) => {
     const { id, review, starRating } = req.body
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
-        res.send("Invalid cookie.")
+        res.status(401).send("Invalid cookie.")
 
     if(!starRating || starRating > 5 || starRating < 0)
-        return res.status(500).send("Invalid Review")
+        return res.status(400).send("Invalid Review")
 
     if(review.length > 200){
-        return res.status(500).send("Invalid Review")
+        return res.status(400).send("Invalid Review")
     }
     if(sessions[sessionId].type === "user")
     {
@@ -672,8 +669,7 @@ app.post('/backend/reviews', async (req, res) => {
             res.send({reviews, averageRating})
         }
     }else{
-        res.status(500)
-        return res.send("You are not logged in!")
+        return res.status(401).send("You are not logged in!")
     }
 })
 
@@ -686,7 +682,7 @@ app.post("/backend/submitCart", async (req, res) => {
 app.get("/backend/myDetails", async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     if(sessionId === undefined)
-        return res.send("Invalid cookie.")
+        return res.status(401).send("Invalid cookie.")
 
     if(connectedToMongoDB) {
         
@@ -698,7 +694,7 @@ app.get("/backend/myDetails", async (req, res) => {
         const data = {username: user.username, reviewsAndRatings: user.reviewsAndRatings, shoppingCart: user.shoppingCart}
         return res.send(data)
     } else {
-        return res.status(403).send("You must login to access this page.")
+        return res.status(401).send("You must login to access this page.")
     }
     }
 })
@@ -713,10 +709,10 @@ app.post("/backend/stripeCheckout", async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     const sessionObj = sessions[sessionId]
     if(sessionId === undefined || sessionObj === undefined)
-        return res.send("Invalid cookie.")
+        return res.status(401).send("Invalid cookie.")
 
     if(!req.body || req.body === {})
-        return res.send("Invalid order.")
+        return res.status(400).send("Invalid order.")
 
     try {
         const stripeSession = await stripe.checkout.sessions.create({
@@ -773,10 +769,10 @@ app.post("/backend/submitOrder", async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
     const sessionObj = sessions[sessionId]
     if(sessionId === undefined || sessionObj === undefined)
-        return res.send("Invalid cookie.")
+        return res.status(401).send("Invalid cookie.")
 
     if(!req.body || req.body === {})
-        return res.send("Invalid order.")
+        return res.status(400).send("Invalid order.")
 
     const shoppingCart = await getShoppingCart(sessionId)
     const data = returnBasicOrder(req.body)
