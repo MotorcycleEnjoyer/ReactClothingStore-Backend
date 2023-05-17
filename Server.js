@@ -4,7 +4,6 @@ const uuidv4 = require('uuid').v4
 const bcrypt = require('bcrypt')
 const dotenv = require("dotenv")
 dotenv.config()
-const saltRounds = 12
 const fs = require("fs")
 const cors = require("cors")
 const helper = require("./helper")
@@ -13,37 +12,6 @@ const DATABASE_URL = process.env.NODE_ENV === "production" ? process.env.DB_PROD
 const path = require("path")
 const email = require("./emailLogic/nodeMailerDemo")
 const stripe = require("stripe")(process.env.STRIPE_PRIVATE_KEY)
-const emailService = require("./emailLogic/nodeMailerDemo")
-const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET
-
-app.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
-    const sig = request.headers['stripe-signature'];
-  
-    let event;
-  
-    try {
-      event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
-    } catch (err) {
-      response.status(400).send(`Webhook Error: ${err.message}`);
-      return;
-    }
-  
-    // Handle the event
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-        const paymentIntentSucceeded = event.data.object;
-        console.log("PAYMENT SUCCESS!!!")
-        console.log(req.body)
-        // Then define and call a function to handle the event payment_intent.succeeded
-        break;
-      // ... handle other event types
-      default:
-        console.log(`Unhandled event type ${event.type}`);
-    }
-  
-    // Return a 200 response to acknowledge receipt of the event
-    response.send();
-  });
 
 const corsOptions = {
   origin: 'http://localhost:3000',
@@ -55,8 +23,6 @@ app.use(express.json())
 app.use(express.static(path.join(__dirname, "build")))
 
 let sessions, allUserData, allRatingsAndReviews, connectedToMongoDB, avgRatings
-
-module.exports = app
 
 async function setVars(){
     connectedToMongoDB = await mongoHelper.connectToDatabase(DATABASE_URL)
@@ -414,6 +380,7 @@ app.post('/backend/login', async (req, res) => {
     }
 
     const { username, password } = req.body
+    console.log(username, password)
 
     if(username === undefined || password === undefined){
         return res.status(400).send("Login Error.")
@@ -433,6 +400,7 @@ app.post('/backend/login', async (req, res) => {
             comparisonPassword = mongoStore.password
         }
     } else {
+        console.log(allUserData)
         userStore = helper.getUser(username, allUserData)
         usernameFound = ( userStore !== undefined && userStore !== null )
         if(usernameFound) {
@@ -479,7 +447,7 @@ app.post('/backend/login', async (req, res) => {
                     sessions[newSessionToken].csrfToken = csrfToken
                     saveSessions()
                     res.cookie('session', `${newSessionToken}`, { httpOnly: true, secure: true, sameSite: "lax" })
-                    return res.status(201).send({csrfToken})
+                    return res.status(200).send({csrfToken})
                 }
             }else{
                 console.log("POST/login: bad creds BECAUSE BCRYPT FAILED")
@@ -518,7 +486,7 @@ app.post("/backend/register", async (req,res) => {
     }
     
     if (nameIsAvailable) {
-        bcrypt.genSalt(saltRounds, async function(err, salt) {
+        bcrypt.genSalt(12, async function(err, salt) {
             if(err){
                 console.log(err)
                 return res.status(500).send("Error creating account.")
@@ -566,6 +534,7 @@ app.post('/backend/logout', async (req,res) => {
 
     if(sessions[sessionId].type === "user")
     {
+        let temporaryUserId
         delete sessions[sessionId]
         if (connectedToMongoDB) {
             const newAnon = await mongoHelper.createAnon()
@@ -575,7 +544,7 @@ app.post('/backend/logout', async (req,res) => {
             const cart = { shoppingCart: newAnon.shoppingCart, type: "anonymous" }
             return res.status(200).send(cart)
         } else {
-            const temporaryUserId = uuidv4()
+            temporaryUserId = uuidv4()
             helper.createAnonymousSession(temporaryUserId, sessions)
             helper.createAnonymousShoppingCart(temporaryUserId, allUserData)
             saveSessions(); saveUserData();        
@@ -762,18 +731,6 @@ app.post("/backend/stripeCheckout", async (req, res) => {
             cancel_url: `${process.env.SERVER_URL}/`
         })
         res.json({ url: stripeSession.url })
-/*         if(stripeSession.url === `${process.env.SERVER_URL}/userPage`) {
-            console.log("STRIPE SUCCESS MESSAGE!!!")
-            // send email confirmation
-            emailService.sendPurchaseReceipt(req.body)
-            // Push order to orderhistory array
-            const basicOrder = returnBasicOrder(req.body)
-            const user = helper.getUserByCartId(sessionObj.cartId, allUserData)
-            user.orderHistory.push(basicOrder)
-            user.shoppingCart.length = 0
-            saveUserData()
-            // clear shopping cart
-        } */
     } catch (error) {
         console.error(error)
         res.status(500).json({ error: error.message})
@@ -800,7 +757,6 @@ app.post("/backend/submitOrder", async (req, res) => {
     if(!req.body || req.body === {})
         return res.status(400).send("Invalid order.")
 
-    const shoppingCart = await getShoppingCart(sessionId)
     const data = returnBasicOrder(req.body)
     const user = helper.getUserByCartId(sessionObj.cartId, allUserData)
     user.orderHistory.push(data)
@@ -818,3 +774,5 @@ app.get("*", (req, res) =>{
     res.status(404)
     res.send(`<h1>Error 404, page not found</h1>`)
 })
+
+module.exports = app
