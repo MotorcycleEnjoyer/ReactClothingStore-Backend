@@ -696,12 +696,19 @@ app.post("/backend/submitCart", async (req, res) => {
 
 app.post("/backend/myDetails", async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
+    if(sessionId === undefined)
+        return res.status(401).send("Invalid cookie.")
+
     const { csrfToken } = req.body
+    console.log(`CSRF Token: [${csrfToken}]`)
     if (!csrfToken) {
         return res.status(401).send("Invalid authentication.")
     }
-    if(sessionId === undefined)
-        return res.status(401).send("Invalid cookie.")
+    // CSRF Token does not match user's.
+    if (sessions[sessionId].csrfToken !== csrfToken){
+        return res.status(401).send("Invalid authentication.")
+    }
+    
 
     if(connectedToMongoDB) {
         
