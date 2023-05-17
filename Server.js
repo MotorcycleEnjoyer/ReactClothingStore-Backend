@@ -208,14 +208,24 @@ app.get("/backend/shoppingCart", async (req, res) => {
             const temporaryUserId = uuidv4()
             helper.createAnonymousSession(temporaryUserId, sessions)
             helper.createAnonymousShoppingCart(temporaryUserId, allUserData)
-            saveSessions(); saveUserData();        
-            res.set('Set-Cookie', `session=${temporaryUserId}`)
-            return res.send(await getShoppingCart(temporaryUserId))
+            saveSessions(); saveUserData(); 
+            let cart = await getShoppingCart(temporaryUserId)
+            let payload
+            if (sessions[temporaryUserId].csrfToken) {
+                payload = {
+                    csrfToken: sessions[temporaryUserId].csrfToken,
+                    ...cart
+                }
+            } else {
+                payload = { ...cart }
+            }
+            res.cookie('session', `${temporaryUserId}`, { httpOnly: true, secure: true, sameSite: "lax" })
+            return res.send(payload)
         }
-        
     } else {
-        await getShoppingCart(sessionId)
-        res.status(200).send(await getShoppingCart(sessionId))
+        let csrfToken = sessions[sessionId].csrfToken
+        const cart = await getShoppingCart(sessionId)
+        res.status(200).send({csrfToken, ...cart})
     }
 })
 
@@ -465,8 +475,11 @@ app.post('/backend/login', async (req, res) => {
                         sessions[newSessionToken] = { type:"user", cartId: cartId}
                         saveSessions(); saveUserData();
                     }
-                    res.set('Set-Cookie', `session=${newSessionToken}`)
-                    res.status(200).send("Logged in successfuly!")
+                    let csrfToken = uuidv4()
+                    sessions[newSessionToken].csrfToken = csrfToken
+                    saveSessions()
+                    res.cookie('session', `${newSessionToken}`, { httpOnly: true, secure: true, sameSite: "lax" })
+                    return res.status(201).send({csrfToken})
                 }
             }else{
                 console.log("POST/login: bad creds BECAUSE BCRYPT FAILED")
@@ -526,18 +539,19 @@ app.post("/backend/register", async (req,res) => {
                     const newUser = await mongoHelper.getUser({username})
                     sessions[newSessionToken] = {type: "user", username: newUser.username}
                     deleteOldSession(sessionId)
-                    saveSessions()
                 } else {
                     const permanentCartId = uuidv4()
                     allUserData.registeredUsers.push({username: username, password: hash, reviewsAndRatings: {}, cartId: permanentCartId, shoppingCart: [], orderHistory: []})
                     sessions[newSessionToken] = { type:"user", cartId: permanentCartId}
                     deleteTempUserCart(sessionId)
                     deleteOldSession(sessionId)
-                    saveSessions(); saveUserData();
+                    saveUserData();
                 }
-
-                res.set('Set-Cookie', `session=${newSessionToken}`)
-                return res.status(201).send("POST/register: Registered Successfully!")
+                let csrfToken = uuidv4()
+                sessions[newSessionToken].csrfToken = csrfToken
+                saveSessions()
+                res.cookie('session', `${newSessionToken}`, { httpOnly: true, secure: true, sameSite: "lax" })
+                return res.status(201).send({csrfToken})
             })
         });
     }else{
@@ -565,9 +579,10 @@ app.post('/backend/logout', async (req,res) => {
             helper.createAnonymousSession(temporaryUserId, sessions)
             helper.createAnonymousShoppingCart(temporaryUserId, allUserData)
             saveSessions(); saveUserData();        
-            res.set('Set-Cookie', `session=${temporaryUserId}`)
-            return res.send("POST/logout: Logged out successfully!")
         }
+            res.cookie('session', `${temporaryUserId}`, { httpOnly: true, secure: true, sameSite: "lax" })
+            return res.send("POST/logout: Logged out successfully!")
+
     }else{
         return res.status(401).send("POST/logout: You are not logged in!")
     }
@@ -679,8 +694,12 @@ app.post("/backend/submitCart", async (req, res) => {
     res.send(response)
 })
 
-app.get("/backend/myDetails", async (req, res) => {
+app.post("/backend/myDetails", async (req, res) => {
     const sessionId = getSession(req.headers.cookie)
+    const { csrfToken } = req.body
+    if (!csrfToken) {
+        return res.status(401).send("Invalid authentication.")
+    }
     if(sessionId === undefined)
         return res.status(401).send("Invalid cookie.")
 
