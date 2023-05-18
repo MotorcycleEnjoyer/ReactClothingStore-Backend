@@ -466,10 +466,13 @@ app.post("/backend/register", async (req,res) => {
         return res.status(403).send("Already Logged In...")
     }
 
-    const { username, password } = req.body
+    const { username, password, confirmPassword } = req.body
 
-    if(username === undefined || password === undefined){
+    if(username === undefined || password === undefined || confirmPassword === undefined){
         return res.status(400).send("Error creating account.")
+    }
+    if(password !== confirmPassword) {
+        return res.status(400).send("Passwords do not match.")
     }
     if(password.length < 8){
         return res.status(400).send("Password must be at least 8 characters.")
@@ -614,6 +617,52 @@ app.post('/backend/getRatingsAndReviews', async (req, res) => {
         const reviews = Array.from(helper.limitedArrayPull(currProduct.reviews, i => i.length > 10, 10))
         return res.status(200).send({averageRating, reviews})
     }    
+})
+
+app.post('/backend/changePassword', async (req, res) => {
+    const { password, confirmPassword, csrfToken } = req.body
+    const sessionId = getSession(req.headers.cookie)
+
+    if(sessionId === undefined)
+        res.status(401).send("Invalid cookie.")
+    if(!csrfToken || csrfToken !== sessions[sessionId].csrfToken)
+        res.status(401).send("Invalid auth.")
+
+
+    if(password === undefined || confirmPassword === undefined){
+        return res.status(400).send("Error creating account.")
+    }
+    if(password.length < 8){
+        return res.status(400).send("Password must be at least 8 characters.")
+    }
+    if(password.length > 30){
+        return res.status(400).send("Error creating account.")
+    }
+    if(password !== confirmPassword)
+        return res.status(400).send("Passwords do not match.")
+    
+    bcrypt.genSalt(12, async function(err, salt) {
+        if(err){
+            console.log(err)
+            return res.status(500).send("Error creating account.")
+        }
+        bcrypt.hash(password, salt, async function(err, hash) {
+            if(err){
+                return res.status(500).send("Error creating account.")
+            }
+            if (connectedToMongoDB) {
+            } else {
+                const account = allUserData.registeredUsers.find((x) => x.cartId === sessions[sessionId].cartId)
+                account.password = hash
+                saveUserData();
+            }
+            let csrfToken = uuidv4()
+            sessions[sessionId].csrfToken = csrfToken
+            saveSessions()
+            return res.status(200).send({csrfToken})
+        })
+    });
+
 })
 
 app.post('/backend/reviews', async (req, res) => {
