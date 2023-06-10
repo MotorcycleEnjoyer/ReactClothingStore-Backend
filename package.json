@@ -20,6 +20,6 @@
     "supertest": "^6.3.3"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest --detectOpenHandles --watch"
   }
 }
