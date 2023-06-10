@@ -89,7 +89,7 @@ const testMessage = {
 let mailConfig
 let message
 
-if (process.env.NODE_ENV === 'test' ) {
+//if (process.env.NODE_ENV === 'test' ) {
     mailConfig = {
         host: process.env.TESTING_EMAIL_HOST,
         port: process.env.TESTING_EMAIL_PORT,
@@ -99,7 +99,7 @@ if (process.env.NODE_ENV === 'test' ) {
         }
     }
     message = dummyMessage
-} else if (process.env.NODE_ENV === 'production') {
+/* } else if (process.env.NODE_ENV === 'production') {
     mailConfig = {
         service: process.env.PRODUCTION_EMAIL_SERVICE,
         auth: {
@@ -110,7 +110,7 @@ if (process.env.NODE_ENV === 'test' ) {
     message = testMessage
 } else {
     process.exit(1)
-}
+} */
 
 async function sendPresetMessage() {
     const transporter = nodemailer.createTransport(mailConfig);
@@ -127,5 +127,56 @@ async function sendPresetMessage() {
         return
     }
 }
+  
+async function sendPurchaseReceipt (productArray) {
+    if(!productArray || productArray?.length === 0)
+        throw new Error("sendPurchaseReceipt invalid data")
+    
+    const len = productArray.length
 
-module.exports = { sendPresetMessage }
+    const receipt = {
+        from: process.env.PRODUCTION_EMAIL_ADDRESS,
+        to: process.env.PRODUCTION_EMAIL_RECIPIENT,
+        subject: `Nodemailer Dummy Receipt`,
+        text: `Thank you! Your order of ${productArray[0].details.name} ${(len > 1) ? ("and " + (len-1) + " more items") : null} has been processed.`,
+        html: `
+            <div>
+                <h1>Order #12345 has been processed!</h1>
+                <div>
+                    <h2>${productArray[0].details.name}</h2>
+                    <p>
+                        ${productArray[0].details.manufacturerOrBrand}<br></br>
+                        ${productArray[0].details.price * productArray[0].amount}
+                    </p>
+                </div>
+                <div>
+                    <h3>... and ${productArray.length - 1} more items</h3>
+                </div>
+            </div>`,
+        amp: `<!doctype html>
+            <html ⚡4email>
+            <head>
+                <meta charset="utf-8">
+                <style amp4email-boilerplate>body{visibility:hidden}</style>
+            </head>
+            <body>
+                <h1>Hello World!</h1>
+            </body>
+            </html>`
+    }
+    const transporter = nodemailer.createTransport(mailConfig);
+
+    try {
+        let responseMessage = await transporter.sendMail(receipt)
+        if(responseMessage.error) { 
+            throw responseMessage.error
+        }
+
+        return responseMessage.response
+    } catch (err) {
+        console.error(err)
+        return
+    }
+}
+
+module.exports = { sendPresetMessage, sendPurchaseReceipt }
