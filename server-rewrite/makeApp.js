@@ -1,4 +1,5 @@
 const express = require("express")
+const uuidv4 = require('uuid').v4
 
 function makeApp (database) {
     const app = express()
@@ -9,6 +10,13 @@ function makeApp (database) {
     })
 
     app.get("/api/shoppingCart", (req, res) => {
+        const { cookie } = req.headers
+
+        if(!cookie) {
+            const newCookie = uuidv4()
+            res.cookie(newCookie)
+        }
+        
         res.send({
             loginStatus: "anon",
             shoppingCart: []

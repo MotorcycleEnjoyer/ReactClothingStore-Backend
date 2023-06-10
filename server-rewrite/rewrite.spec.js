@@ -26,6 +26,21 @@ describe("/api/shoppingCart", () => {
 
             expect(response.body).toStrictEqual(cartFixtures.intitialCart)
         })
+        test("Returns a cookie if none in request", async () => {
+            const response = await api.get(endpoint)
+
+            const cookie = response.headers["set-cookie"]
+
+            expect(cookie).toBeDefined()
+        })
+        test("DOES NOT return a cookie if one exists in request", async () => {
+            const sentCookie = "abcdefghijklmnop"
+            const response = await api.get(endpoint).set("Cookie", sentCookie)
+
+            const cookie = response.headers["set-cookie"]
+
+            expect(cookie).toBe(undefined)
+        })
     })
 
     describe("POST", () => {
