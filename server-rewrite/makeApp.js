@@ -8,6 +8,13 @@ function makeApp (database) {
         res.json("Hello World!")
     })
 
+    app.get("/api/shoppingCart", (req, res) => {
+        res.send({
+            loginStatus: "anon",
+            shoppingCart: []
+        })
+    })
+
     return app
 }
 
