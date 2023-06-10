@@ -81,18 +81,6 @@ function getProductFromProductDatabase(productName, productId){
     }
 }
 
-function cookieChecker(cookie){
-    if(cookie === undefined){
-        return undefined
-    }
-
-    const sessionId = cookie.split("=")[1]
-    if(sessionId === undefined){
-        return undefined
-    }
-    return sessionId
-}
-
 function createAnonymousSession(sessionId, sessionStorage){
     sessionStorage[sessionId] = {type: "anonymous"}
 }
@@ -110,32 +98,6 @@ function getQueryFromUrl(urlData){
 function getProductIdFromUrl(urlData){
     let urlObject = url.parse(urlData)
     return parseInt(urlObject.href.split("id/")[1])
-}
-
-function checkIfUserIsLoggedIn(arr, sessions, username){
-    let isLoggedIn = false
-
-    arr.every((item) => {
-        if(sessions[item].username === (username)){
-            isLoggedIn = true
-        }
-        if(isLoggedIn)
-            return false
-        
-        return true
-    })
-    
-    return isLoggedIn
-}
-
-function editItemInCart(cart, productId, newData, oldData, amount){
-    let index = getIndexOfItemInCart(cart, productId, oldData)
-    if(index === -1){
-        return false
-    }else{
-        cart[index] = {...cart[index], userSelectedParameters: {...newData}, amount: amount}
-        return true
-    }
 }
 
 function deleteItemFromCart(cart, indexInCart){
@@ -189,31 +151,7 @@ function createNewObject(productId, data, amount){
     return tempObject
 }
 
-function editFunction(myCart, productId, newData, oldData, amount){
-    if(areIdentical(oldData, newData)){
-        setAmountOfExistingCartItem(myCart, productId, newData, amount )
-        return "Edit completed"
-    }else{
-        if(getIndexOfItemInCart(myCart, productId, newData) === -1){
-            // If cartItem doesn't exist, push a new one
-            let tempObject = createNewObject(productId, newData, amount)
-            addToCart(myCart, tempObject)
-            deleteItemFromCart(myCart, getIndexOfItemInCart(myCart, productId, oldData))
-            return "Added to Cart"
-        }else{
-            // Otherwise Increment the existing one, and delete the old one.
-            incrementAmountOfExistingCartItem(myCart, productId, newData, amount)
-            deleteItemFromCart(myCart, getIndexOfItemInCart(myCart, productId, oldData))
-            return "Added to Existing Item"
-        }
-    }
-}
-
 function validateDataGiven(productId, userChoices, amount){
-/*     let dataKeys = Object.keys(userChoices)
-    for(key of dataKeys){
-        
-    } */
     if(getProductFromProductDatabase("NONE", productId) === [])
     {
         console.error(`Product Id "${productId} is not within product database.`)
@@ -266,9 +204,9 @@ function getUserByCartId(cartId, allCredentials){
 }
 
 module.exports = 
-{ findSearchSuggestions, getProductFromProductDatabase, cookieChecker, createAnonymousSession, 
-    createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl, checkIfUserIsLoggedIn,
+{ findSearchSuggestions, getProductFromProductDatabase, createAnonymousSession, 
+    createAnonymousShoppingCart, getQueryFromUrl, getProductIdFromUrl,
     hasOnlyNumbersAndLetters, incrementAmountOfExistingCartItem,
-    validateDataGiven, editItemInCart, deleteItemFromCart, editFunction, createNewObject,
+    validateDataGiven, deleteItemFromCart, createNewObject,
     userNameIsAvailable, limitedArrayPull, areIdentical, getUser, getUserByCartId
     }
