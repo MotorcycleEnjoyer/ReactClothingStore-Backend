@@ -45,7 +45,7 @@ const db = [
             name: "Some T Shirt",
             manufacturerOrBrand: "Someone",
             typeOfClothing: "T-Shirt",
-            colorOptions: ["red", "green", "orange", "pink", "cyan", "purple", "yellow", "blue", "pink"],
+            colorOptions: ["red", "green", "orange", "pink", "cyan", "purple", "yellow", "blue"],
             amountInStockPerColor: {
                     red: 10, 
                     green: 3,
