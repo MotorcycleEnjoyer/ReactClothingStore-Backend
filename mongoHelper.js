@@ -1,6 +1,5 @@
 const mongoose = require("mongoose")
 const uuidv4 = require('uuid').v4
-const dummyProductDB = require('./dummyProductDB')
 const User = require("./databaseLogic/User")
 const AnonUser = require("./databaseLogic/Anonymous")
 
@@ -117,7 +116,7 @@ async function createAnon () {
 
 async function createUserAndDeleteAnon (userCredentials, temporaryAnonCookie) {
     const { username, password } = userCredentials
-    if(!username || !password || !temporaryAnonCookie) {
+    if(!username || !password) {
         throw new Error("Undefined Credentials!")
     } else {
         const payload = {
