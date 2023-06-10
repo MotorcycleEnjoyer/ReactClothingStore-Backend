@@ -33,13 +33,21 @@ describe("/api/shoppingCart", () => {
 
             expect(cookie).toBeDefined()
         })
-        test("DOES NOT return a cookie if one exists in request", async () => {
+        test("Returns a cookie if session not found on server", async () => {
             const sentCookie = "abcdefghijklmnop"
             const response = await api.get(endpoint).set("Cookie", sentCookie)
-
             const cookie = response.headers["set-cookie"]
 
-            expect(cookie).toBe(undefined)
+            expect(cookie).toBeDefined()
+        })
+        test("Does NOT return a cookie if session is found on server", async () => {
+            const response = await api.get(endpoint)
+            const validCookie = response.headers["set-cookie"]
+
+            const testResponse = await api.get(endpoint).set("Cookie", validCookie)
+            const testCookie = testResponse.headers.cookie
+            
+            expect(testCookie).toBe(undefined)
         })
     })
 
