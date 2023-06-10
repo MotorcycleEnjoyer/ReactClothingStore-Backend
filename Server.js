@@ -620,6 +620,11 @@ app.post('/backend/getRatingsAndReviews', async (req, res) => {
 })
 
 app.post('/backend/changePassword', async (req, res) => {
+    const { email } = req.body
+    // send reset email link
+})
+
+app.post('/backend/changePassword', async (req, res) => {
     const { password, confirmPassword, csrfToken } = req.body
     const sessionId = getSession(req.headers.cookie)
 
@@ -735,7 +740,7 @@ app.post("/backend/myDetails", async (req, res) => {
         if(sessions[sessionId].type === "user")
     {
         const user = helper.getUserByCartId(sessions[sessionId].cartId, allUserData)
-        const data = {username: user.username, reviewsAndRatings: user.reviewsAndRatings, shoppingCart: user.shoppingCart}
+        const data = {username: user.username, reviewsAndRatings: user.reviewsAndRatings, shoppingCart: user.shoppingCart, orderHistory: user.orderHistory}
         return res.send(data)
     } else {
         return res.status(401).send("You must login to access this page.")
