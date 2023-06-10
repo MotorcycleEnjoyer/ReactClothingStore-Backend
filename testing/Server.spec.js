@@ -154,3 +154,4 @@ test("REGISTERING -> ADDING TO CART -> LOGGING OFF -> LOGGING IN, returns proper
 */
 
 test.todo("Registering with same username causes failure")
+test.todo("Accessing UserData page returns a user data object if logged in, or You must log in.")
