@@ -1,6 +1,7 @@
 const request = require("supertest")
 const makeApp = require("./makeApp")
 const app = makeApp()
+const { cartFixtures } = require("./fixtures")
 
 describe("/", () => {
     const api = request(app)
@@ -23,7 +24,22 @@ describe("/api/shoppingCart", () => {
         test("Returns object with shopping cart and user login status", async () => {
             const response = await api.get(endpoint)
 
-            expect(response.body).toBe({})
+            expect(response.body).toStrictEqual(cartFixtures.intitialCart)
         })
+    })
+
+    describe("POST", () => {
+        // This is adding to cart
+
+    })
+
+    describe("PUT", () => {
+        // This is editing cart item
+
+    })
+
+    describe("DELETE", () => {
+        // This is deleting cart item or whole cart
+
     })
 })
