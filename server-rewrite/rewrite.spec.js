@@ -4,7 +4,7 @@ const app = makeApp()
 const { cartFixtures } = require("./fixtures")
 
 describe("/", () => {
-    const endpoint = "/"
+    const endpoint = "/helloWorld"
     
     describe("GET", () => {
         test("Returns Hello World!", async () => {
@@ -14,17 +14,20 @@ describe("/", () => {
             expect(response.body).toBe("Hello World!")
         })
 
-        test("Requests exceed 10/min, returns 429", async () => {
+        test("Requests exceed 6/second, returns 429", async () => {
             const api = request(app)
 
-            let responses = []
-            for (let i = 0; i <= 10; i++) {
-                let response = await api.get(endpoint)
-                responses.push(response)
+            let response
+            // 
+            for (let i = 1; i <= 6; i++) {
+                response = await api.get(endpoint)
+                if(i === 5) {
+                    expect(response.status).toBe(200)
+                }
+                if(i === 6) {
+                    expect(response.status).toBe(429)
+                }
             }
-    
-            expect(responses[9].statusCode).toBe(200)
-            expect(responses[10].statusCode).toBe(429)
         })
     })
 })
