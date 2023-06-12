@@ -16,7 +16,7 @@ function makeApp (database, sessionsObject = {}) {
     app.get("/api/shoppingCart", (req, res) => {
         const { cookie } = req.headers
 
-        if (isNotCurrentCookie(cookie)) {
+        if (sessionNotFound(cookie)) {
             const newCookie = uuidv4()
             sessions[newCookie] = newSessionWithCart()
             res.cookie(newCookie)
@@ -43,7 +43,7 @@ function makeApp (database, sessionsObject = {}) {
         }
 
         let cartId = cookie
-        if (isNotCurrentCookie(cartId)) {
+        if (sessionNotFound(cartId)) {
             cartId = uuidv4()
             const newUserObject = newSessionWithCart()
             sessions[cartId] = newUserObject
@@ -51,10 +51,8 @@ function makeApp (database, sessionsObject = {}) {
         }
 
         const cartToModify = fetchShoppingCart(cartId).shoppingCart
-        if(!addToCart({itemId, amount, params}, cartToModify)) {
-            res.status(400)
-        }
-        res.send(fetchShoppingCart(cartId))
+        const statusCode = addToCart({itemId, amount, params}, cartToModify)
+        res.status(statusCode).send(fetchShoppingCart(cartId))
     })
 
     function validateParams(params) {
@@ -73,14 +71,27 @@ function makeApp (database, sessionsObject = {}) {
     }
 
     function addToCart(object, cart) {
-        if(validateParams(object.params)) {
-            cart.push(object)
+        if (validateParams(object.params)) {
+            if (itemIsInStock(object)) {
+                cart.push(object)
+                return 200
+            } else {
+                return 500
+            }
         } else {
-            return false
+            return 400
         }
     }
 
-    function isNotCurrentCookie (cookie) {
+    function itemIsInStock(object) {
+        if (object.amount > 1) {
+            return false
+        }
+
+        return true
+    }
+
+    function sessionNotFound (cookie) {
         return sessions[cookie] === undefined
     }
 

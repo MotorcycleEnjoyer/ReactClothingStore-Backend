@@ -180,7 +180,14 @@ describe("POST /api/shoppingCart", () => {
     })
     
     describe("[Bad Server Situations]", () => {
-        test.todo("Item of current configuration is out of stock, returns 500")
+        test("Item of current configuration has insufficient stock, returns 500", async () => {
+            const api = request(appWithOneActiveSession)
+            const payload = getParams({ amount: 2 })
+
+            const response = await api.post(endpoint).send(payload).set("Cookie", fixtureCookie)
+
+            expect(response.status).toBe(500)
+        })
         test.todo("Cannot reach Database, add to cart fails, returns 500")
         test.todo("Database fails to add to cart, returns 500")
     })
