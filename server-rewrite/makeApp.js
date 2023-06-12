@@ -30,6 +30,10 @@ function makeApp (database, sessionsObject = {}) {
         const { cookie } = req.headers
         const { itemId } = req.body
 
+        if (!itemId || typeof itemId !== "number") {
+            return res.status(400).send("No item to append!")
+        }
+
         if (isNotCurrentCookie(cookie)) {
             const newCookie = uuidv4()
             const newSession = {...newSessionWithCart(), shoppingCart: [{ itemId }]}
@@ -38,7 +42,9 @@ function makeApp (database, sessionsObject = {}) {
             return res.send(fetchShoppingCart(newCookie))
         }
 
-
+        const cartToModify = fetchShoppingCart(cookie).shoppingCart
+        cartToModify.push({ itemId })
+        res.send(fetchShoppingCart(cookie))
     })
 
     function isNotCurrentCookie (cookie) {
