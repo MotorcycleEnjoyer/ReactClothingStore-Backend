@@ -77,6 +77,10 @@ describe("POST /api/shoppingCart", () => {
 
         expect(response.body).toStrictEqual(cartFixtures.itemOneCart)
     })
+
+    test("Adding duplicate item increments it in cart", async () => {
+        
+    })
     
     describe("[Bad Actions]", () => {
         test("No cookie, returns new cart with that item and a cookie", async () => {
@@ -149,7 +153,29 @@ describe("POST /api/shoppingCart", () => {
                 }
             })
         })
-        test.todo("Invalid parameters on item (ex: color), returns 400")
+        test("Invalid parameters on item (ex: color), returns 400", async () => {
+            const api = request(appWithOneActiveSession)
+            const payloads = []
+            payloads.push(getParams({ params: { color: undefined, size: "medium" }}))
+            payloads.push(getParams({ params: { color: null, size: "medium" }}))
+            payloads.push(getParams({ params: { color: {}, size: "medium" }}))
+            payloads.push(getParams({ params: { color: [], size: "medium" }}))
+            payloads.push(getParams({ params: { color: 1, size: "medium" }}))
+            payloads.push(getParams({ params: { color: "1", size: "medium" }}))
+
+            payloads.push(getParams({ params: { color: "red", size: undefined }}))
+            payloads.push(getParams({ params: { color: "red", size: null }}))
+            payloads.push(getParams({ params: { color: "red", size: {} }}))
+            payloads.push(getParams({ params: { color: "red", size: [] }}))
+            payloads.push(getParams({ params: { color: "red", size: 1 }}))
+            payloads.push(getParams({ params: { color: "red", size: "1" }}))
+
+            for (let i = 0; i < payloads.length; i++) {
+                const response = await api.post(endpoint).send(payloads[i]).set("Cookie", fixtureCookie)
+                expect(response.status).toBe(400)
+            }
+
+        })
         test.todo("Requests exceed 10/min, returns 429")
     })
     
@@ -163,7 +189,11 @@ describe("POST /api/shoppingCart", () => {
     function getParams (overrides = {}) {
         const defaultParams = {
             itemId: 1,
-            amount: 1
+            amount: 1,
+            params: {
+                color: "gray",
+                size: "medium",
+            }
         }
     
         const params = { ...defaultParams, ...overrides }
@@ -189,6 +219,16 @@ describe("PUT /api/shoppingCart", () => {
         test.todo("Database fails to edit item, returns 500")
     })
 
+    function getParams (overrides = {}) {
+        const defaultParams = {
+            positionOfItemInCart: 1,
+            newAmount: 1,
+        }
+    
+        const params = { ...defaultParams, ...overrides }
+    
+        return params
+    }
 })
 
 describe("DELETE /api/shoppingCart", () => {

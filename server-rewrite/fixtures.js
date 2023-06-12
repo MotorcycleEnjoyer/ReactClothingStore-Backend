@@ -7,7 +7,11 @@ const cartFixtures = {
         loginStatus: "anon",
         shoppingCart: [{
             itemId: 1,
-            amount: 1
+            amount: 1,
+            params: {
+                color: "gray",
+                size: "medium",
+            }
         }]
     }
 }
