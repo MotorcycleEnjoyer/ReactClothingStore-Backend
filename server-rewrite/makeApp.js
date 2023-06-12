@@ -2,12 +2,12 @@ const express = require("express")
 const uuidv4 = require('uuid').v4
 const rateLimiterMiddleware = require("./rateLimiterMemoryMiddleware")
 
-function makeApp (database) {
+function makeApp (database, sessionsObject = {}) {
     const app = express()
     app.use(express.json())
     app.use("/helloWorld", rateLimiterMiddleware)
 
-    const sessions = {}
+    const sessions = {...sessionsObject}
 
     app.get("/helloWorld", (req, res) => {
         res.json("Hello World!")
@@ -16,18 +16,29 @@ function makeApp (database) {
     app.get("/api/shoppingCart", (req, res) => {
         const { cookie } = req.headers
 
-        if(isNotCurrentCookie(cookie)) {
+        if (isNotCurrentCookie(cookie)) {
             const newCookie = uuidv4()
-            sessions[newCookie] = {
-                loginStatus: "anon",
-                shoppingCart: []
-            }
-
+            sessions[newCookie] = newSessionWithCart()
             res.cookie(newCookie)
             return res.send(fetchShoppingCart(newCookie))
         }
         
         res.send(fetchShoppingCart(cookie))
+    })
+
+    app.post("/api/shoppingCart", (req, res) => {
+        const { cookie } = req.headers
+        const { itemId } = req.body
+
+        if (isNotCurrentCookie(cookie)) {
+            const newCookie = uuidv4()
+            const newSession = {...newSessionWithCart(), shoppingCart: [{ itemId }]}
+            sessions[newCookie] = newSession
+            res.cookie(newCookie)
+            return res.send(fetchShoppingCart(newCookie))
+        }
+
+
     })
 
     function isNotCurrentCookie (cookie) {
@@ -36,6 +47,13 @@ function makeApp (database) {
 
     function fetchShoppingCart (cookie) {
         return sessions[cookie]
+    }
+
+    function newSessionWithCart () {
+        return {
+            loginStatus: "anon",
+            shoppingCart: []
+        }
     }
 
     return app
