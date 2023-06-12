@@ -28,20 +28,25 @@ function makeApp (database, sessionsObject = {}) {
 
     app.post("/api/shoppingCart", (req, res) => {
         const { cookie } = req.headers
-        const { itemId } = req.body
+        const { itemId, amount } = req.body
 
         if (!itemId || typeof itemId !== "number") {
             return res.status(400).send("No item to append!")
         }
 
+        if (!amount || typeof amount !== "number" || amount <= 0 || amount > 100) {
+            return res.status(400).send("Invalid amount")
+        }
+
         if (isNotCurrentCookie(cookie)) {
             const newCookie = uuidv4()
-            const newSession = {...newSessionWithCart(), shoppingCart: [{ itemId }]}
+            const newSession = {...newSessionWithCart(), shoppingCart: [{ itemId, amount }]}
             sessions[newCookie] = newSession
             res.cookie(newCookie)
             return res.send(fetchShoppingCart(newCookie))
         }
 
+        console.log(cookie)
         const cartToModify = fetchShoppingCart(cookie).shoppingCart
         cartToModify.push({ itemId })
         res.send(fetchShoppingCart(cookie))
