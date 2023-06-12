@@ -45,8 +45,8 @@ function makeApp (database, sessionsObject = {}) {
         let cartId = cookie
         if (isNotCurrentCookie(cartId)) {
             cartId = uuidv4()
-            const newSession = newSessionWithCart()
-            sessions[cartId] = newSession
+            const newUserObject = newSessionWithCart()
+            sessions[cartId] = newUserObject
             res.cookie(cartId)
         }
 
