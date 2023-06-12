@@ -6,7 +6,8 @@ const cartFixtures = {
     itemOneCart: {
         loginStatus: "anon",
         shoppingCart: [{
-            itemId: 1
+            itemId: 1,
+            amount: 1
         }]
     }
 }
