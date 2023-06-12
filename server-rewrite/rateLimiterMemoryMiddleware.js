@@ -11,7 +11,6 @@ const rateLimiterMiddleware = (req, res, next) => {
     if(req.originalUrl === "/api/shoppingCart") {
         points = 2
     }
-    console.log(points)
     rateLimiter.consume(req.ip, points)
         .then(() => {
             next();
