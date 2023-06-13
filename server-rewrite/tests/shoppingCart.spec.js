@@ -3,6 +3,7 @@ const makeApp = require("../makeApp")
 const { cartFixtures, sessionFixtures } = require("../fixtures")
 const app = makeApp()
 const appWithOneActiveSession = makeApp({}, sessionFixtures.oneSession)
+const appWithOneItemInCart = makeApp({}, sessionFixtures.sessionWithOneItem)
 
 const fixtureCookie = sessionFixtures.sessionToken
 const endpoint = "/api/shoppingCart"
@@ -79,7 +80,14 @@ describe("POST /api/shoppingCart", () => {
     })
 
     test("Adding duplicate item increments it in cart", async () => {
+        const api = request(appWithOneItemInCart)
+        const payload = getParams()
         
+        const response = await api.post(endpoint).send(payload).set("Cookie", fixtureCookie)
+
+        console.log(response.body)
+
+        expect(response.body).toStrictEqual(cartFixtures.duplicateItemOneCart)
     })
     
     describe("[Bad Actions]", () => {

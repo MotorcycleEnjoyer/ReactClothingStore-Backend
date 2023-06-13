@@ -70,10 +70,33 @@ function makeApp (database, sessionsObject = {}) {
         return true
     }
 
+    function indexOfDuplicateInCart (object, cart) {
+        const status = cart.findIndex((x) => {
+            if(x.itemId === object.itemId) {
+                const keys = Object.keys(x.params)
+                let allEqual = true
+                for (let i = 0; i < keys.length; i++){
+                    if(object.params[keys[i]] !== x.params[keys[i]]) {
+                        allEqual = false
+                    }
+                }
+                if (allEqual) {
+                    return x
+                }
+            }
+        })
+        return status
+    }
+
     function addToCart(object, cart) {
         if (validateParams(object.params)) {
             if (itemIsInStock(object)) {
-                cart.push(object)
+                const index = indexOfDuplicateInCart(object, cart) 
+                if (index === -1) {
+                    cart.push(object)
+                } else {
+                    cart[index].amount += object.amount
+                }
                 return 200
             } else {
                 return 500
