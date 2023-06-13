@@ -56,16 +56,6 @@ describe("GET /api/shoppingCart", () => {
             expect(testCookie).toBe(undefined)
         })
         test.todo("Requests exceed 10/min, returns 429")
-    /*         test("Requests exceed 10/min, returns 429", async () => {
-            const api = request(app)
-    
-            let response
-            for (let i = 0; i <= 10; i++) {
-                response = await api.get(endpoint)
-            }
-    
-            expect(response.statusCode).toBe(429)
-        }) */
 })
 
 describe("POST /api/shoppingCart", () => {
@@ -84,8 +74,6 @@ describe("POST /api/shoppingCart", () => {
         const payload = getParams()
         
         const response = await api.post(endpoint).send(payload).set("Cookie", fixtureCookie)
-
-        console.log(response.body)
 
         expect(response.body).toStrictEqual(cartFixtures.duplicateItemOneCart)
     })
@@ -121,68 +109,60 @@ describe("POST /api/shoppingCart", () => {
     
             expect(response.status).toBe(400)
         })
-        describe("(Invalid item to add to cart, returns 400)", () => {
-            test("itemId is not a number", async () => {
+        describe("(Invalid parameters, returns 400)", () => {
+            test("itemId", async () => {
                 const api = request(appWithOneActiveSession)
                 const payloads = []
-                payloads.push(getParams({ itemId: undefined }))
-                payloads.push(getParams({ itemId: null }))
-                payloads.push(getParams({ itemId: { stuff: 12345 } }))
-                payloads.push(getParams({ itemId: [1, 2, 3] }))
-                payloads.push(getParams({ itemId: "abcdef" }))
+                payloads.push( getParams({ itemId: undefined }))
+                payloads.push( getParams({ itemId: null }))
+                payloads.push( getParams({ itemId: { stuff: 12345 } }))
+                payloads.push( getParams({ itemId: [1, 2, 3] }))
+                payloads.push( getParams({ itemId: "abcdef" }))
     
                 for (let i = 0; i < payloads.length; i++) {
                     const response = await api.post(endpoint).send(payloads[i]).set("Cookie", fixtureCookie)
                     expect(response.status).toBe(400)
                 }                 
             })
-        })
-        describe("(Invalid amount of item to add to cart, returns 400)", () => {
-            test("Amount is out of boundary: [0, 100]", async () => {
-                const api = request(appWithOneActiveSession)
-                const payload = getParams({ amount: -1 })
-    
-                const response = await api.post(endpoint).send(payload).set("Cookie", fixtureCookie)
-    
-                expect(response.status).toBe(400)
-            })
-            test("Amount is not a number", async () => {
+            test("amount", async () => {
                 const api = request(appWithOneActiveSession)
                 const payloads = []
-                payloads.push(getParams({ amount: undefined }))
-                payloads.push(getParams({ amount: null }))
-                payloads.push(getParams({ amount: { stuff: 12345 } }))
-                payloads.push(getParams({ amount: [1, 2, 3] }))
-                payloads.push(getParams({ amount: "abcdef" }))
+                payloads.push( getParams({ amount: undefined }) )
+                payloads.push( getParams({ amount: null }) )
+                payloads.push( getParams({ amount: { stuff: 12345 } }) )
+                payloads.push( getParams({ amount: [1, 2, 3] }) )
+                payloads.push( getParams({ amount: "abcdef" }) )
+                payloads.push( getParams({ amount: 101 }) )
+                payloads.push( getParams({ amount: -1 }) )
     
                 for (let i = 0; i < payloads.length; i++) {
                     const response = await api.post(endpoint).send(payloads[i]).set("Cookie", fixtureCookie)
                     expect(response.status).toBe(400)
                 }
             })
-        })
-        test("Invalid parameters on item (ex: color), returns 400", async () => {
-            const api = request(appWithOneActiveSession)
-            const payloads = []
-            payloads.push(getParams({ params: { color: undefined, size: "medium" }}))
-            payloads.push(getParams({ params: { color: null, size: "medium" }}))
-            payloads.push(getParams({ params: { color: {}, size: "medium" }}))
-            payloads.push(getParams({ params: { color: [], size: "medium" }}))
-            payloads.push(getParams({ params: { color: 1, size: "medium" }}))
-            payloads.push(getParams({ params: { color: "1", size: "medium" }}))
-
-            payloads.push(getParams({ params: { color: "red", size: undefined }}))
-            payloads.push(getParams({ params: { color: "red", size: null }}))
-            payloads.push(getParams({ params: { color: "red", size: {} }}))
-            payloads.push(getParams({ params: { color: "red", size: [] }}))
-            payloads.push(getParams({ params: { color: "red", size: 1 }}))
-            payloads.push(getParams({ params: { color: "red", size: "1" }}))
-
-            for (let i = 0; i < payloads.length; i++) {
-                const response = await api.post(endpoint).send(payloads[i]).set("Cookie", fixtureCookie)
-                expect(response.status).toBe(400)
-            }
-
+            test("params", async () => {
+                const api = request(appWithOneActiveSession)
+                const payloads = []
+                payloads.push( getParams({ params: { color: undefined, size: "medium" }}) )
+                payloads.push( getParams({ params: { color: null, size: "medium" }}) )
+                payloads.push( getParams({ params: { color: {}, size: "medium" }}) )
+                payloads.push( getParams({ params: { color: [], size: "medium" }}) )
+                payloads.push( getParams({ params: { color: 1, size: "medium" }}) )
+                payloads.push( getParams({ params: { color: "1", size: "medium" }}) )
+    
+                payloads.push( getParams({ params: { color: "red", size: undefined }}) )
+                payloads.push( getParams({ params: { color: "red", size: null }}) )
+                payloads.push( getParams({ params: { color: "red", size: {} }}) )
+                payloads.push( getParams({ params: { color: "red", size: [] }}) )
+                payloads.push( getParams({ params: { color: "red", size: 1 }}) )
+                payloads.push( getParams({ params: { color: "red", size: "1" }}) )
+    
+                for (let i = 0; i < payloads.length; i++) {
+                    const response = await api.post(endpoint).send(payloads[i]).set("Cookie", fixtureCookie)
+                    expect(response.status).toBe(400)
+                }
+    
+            })
         })
         test.todo("Requests exceed 10/min, returns 429")
     })
@@ -190,7 +170,7 @@ describe("POST /api/shoppingCart", () => {
     describe("[Bad Server Situations]", () => {
         test("Item of current configuration has insufficient stock, returns 500", async () => {
             const api = request(appWithOneActiveSession)
-            const payload = getParams({ amount: 2 })
+            const payload = getParams({ amount: 50 })
 
             const response = await api.post(endpoint).send(payload).set("Cookie", fixtureCookie)
 
@@ -217,27 +197,81 @@ describe("POST /api/shoppingCart", () => {
     }
 })
 
+
 describe("PUT /api/shoppingCart", () => {
     // This is editing cart item
+    test("Returns shopping cart with amount updated on item, if in stock", async () => {
+        const api = request(appWithOneItemInCart)
+        const payload = getParams()
+
+        const response = await api.put(endpoint).send(payload).set("Cookie", fixtureCookie)
+        const shoppingCartItem = response.body.shoppingCart[0]
+
+        expect(shoppingCartItem.amount).toBe(10)
+    })
+
     describe("[Bad actions]", () => {
-        test.todo("No cookie, returns status code 400")
-        test.todo("Cookie not found in sessions, returns status code 400")
-        test.todo("No item, returns status code 400")
-        test.todo("Invalid item, returns status code 400")
-        test.todo("Invalid amount of item in edit, returns 400")
-        test.todo("Invalid parameters (ex: color) on edit, returns 400")
+        test("No cookie, returns status code 400", async () => {
+            const api = request(appWithOneItemInCart)
+            const payload = getParams()
+
+            const response = await api.put(endpoint).send(payload)
+
+            expect(response.status).toBe(400)
+        })
+        describe("(Invalid parameters, returns status code 400)", () => {
+            test("indexInCart", async () => {
+                const api = request(appWithOneActiveSession)
+                const payloads = []
+                payloads.push( getParams({ indexInCart: undefined }) )
+                payloads.push( getParams({ indexInCart: null }) )
+                payloads.push( getParams({ indexInCart: { stuff: 12345 } }) )
+                payloads.push( getParams({ indexInCart: [1, 2, 3] }) )
+                payloads.push( getParams({ indexInCart: "abcdef" }) )
+                payloads.push( getParams({ indexInCart: 101 }) )
+                payloads.push( getParams({ indexInCart: -1 }) )
+
+                for(let i = 0; i < payloads.length; i++) {
+                    const response = await api.put(endpoint).send(payloads[i]).set("Cookie", fixtureCookie)
+                    expect(response.status).toBe(400)
+                }
+            })
+            test("newAmount", async () => {
+                const api = request(appWithOneActiveSession)
+                const payloads = []
+                payloads.push( getParams({ newAmount: undefined }) )
+                payloads.push( getParams({ newAmount: null }) )
+                payloads.push( getParams({ newAmount: { stuff: 12345 } }) )
+                payloads.push( getParams({ newAmount: [1, 2, 3] }) )
+                payloads.push( getParams({ newAmount: "abcdef" }) )
+                payloads.push( getParams({ newAmount: 101 }) )
+                payloads.push( getParams({ newAmount: -1 }) )
+
+                for(let i = 0; i < payloads.length; i++) {
+                    const response = await api.put(endpoint).send(payloads[i]).set("Cookie", fixtureCookie)
+                    expect(response.status).toBe(400)
+                }
+            })
+        })
     })
 
     describe("[Bad Server Situations]", () => {
-        test.todo("Item of edit configuration is out of stock, returns 500")
+        test("Item of edit configuration is out of stock, returns 500", async () => {
+            const api = request(appWithOneItemInCart)
+            const payload = getParams( { newAmount: 16 })
+
+            const response = await api.put(endpoint).send(payload).set("Cookie", fixtureCookie)
+
+            expect(response.status).toBe(500)
+        })
         test.todo("Cannot reach database, edit cart fails, returns 500")
         test.todo("Database fails to edit item, returns 500")
     })
 
     function getParams (overrides = {}) {
         const defaultParams = {
-            positionOfItemInCart: 1,
-            newAmount: 1,
+            indexInCart: 0,
+            newAmount: 10
         }
     
         const params = { ...defaultParams, ...overrides }

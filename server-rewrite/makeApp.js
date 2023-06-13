@@ -1,6 +1,7 @@
 const express = require("express")
 const uuidv4 = require('uuid').v4
 const rateLimiterMiddleware = require("./rateLimiterMemoryMiddleware")
+const { restart } = require("nodemon")
 
 function makeApp (database, sessionsObject = {}) {
     const app = express()
@@ -30,11 +31,11 @@ function makeApp (database, sessionsObject = {}) {
         const { cookie } = req.headers
         const { itemId, amount, params } = req.body
 
-        if (!itemId || typeof itemId !== "number") {
+        if (typeof itemId !== "number") {
             return res.status(400).send("No item to append!")
         }
 
-        if (!amount || typeof amount !== "number" || amount <= 0 || amount > 100) {
+        if (typeof amount !== "number" || amount <= 0 || amount > 100) {
             return res.status(400).send("Invalid amount")
         }
 
@@ -55,11 +56,52 @@ function makeApp (database, sessionsObject = {}) {
         res.status(statusCode).send(fetchShoppingCart(cartId))
     })
 
+    app.put("/api/shoppingCart", (req, res) => {
+        const { cookie } = req.headers
+        const { indexInCart, newAmount } = req.body
+
+        if (typeof indexInCart !== "number") {
+            return res.status(400).send("Invalid Index.")
+        }
+        
+        if (typeof newAmount !== "number" || newAmount < 0 || newAmount > 100) {
+            return res.status(400).send("Invalid new amount.")
+        }
+        
+        if (sessionNotFound(cookie)) {
+            return res.status(400).send("Invalid cookie")
+        }
+        
+        const cartToModify = fetchShoppingCart(cookie).shoppingCart
+
+        if (indexInCart < 0 || indexInCart >= cartToModify.length) {
+            return res.status(400).send("Invalid index.")
+        }
+
+        const statusCode = editCart({indexInCart, newAmount, cartToModify})
+        res.status(statusCode).send(fetchShoppingCart(cookie))
+    })
+    
+    function editCart(dataObject) {
+        const { indexInCart, newAmount, cartToModify } = dataObject
+
+        const itemId = cartToModify[indexInCart].itemId
+        const amount = newAmount
+        const item = { itemId, amount }
+
+        if(itemIsInStock(item)) {
+            cartToModify[indexInCart].amount = newAmount
+            return 200
+        } else {
+            return 500
+        }
+    }
+
     function validateParams(params) {
         const { color, size } = params
         const allowedSizes = ["small", "medium", "large", "extraLarge"]
         const allowedColors = ["gray", "black", "white"]
-        if(!color || typeof size !== "string" || !allowedSizes.includes(size)) {
+        if(!size || typeof size !== "string" || !allowedSizes.includes(size)) {
             return false
         }
 
@@ -106,8 +148,17 @@ function makeApp (database, sessionsObject = {}) {
         }
     }
 
+    const stockDb = {
+        1: 15
+    }
+
+    function getStock (itemId) {
+        return stockDb[itemId]
+    }
+
     function itemIsInStock(object) {
-        if (object.amount > 1) {
+        const amountInStock = getStock(object.itemId)
+        if (object.amount > amountInStock) {
             return false
         }
 
