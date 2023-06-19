@@ -4,6 +4,7 @@ const { cartFixtures, sessionFixtures } = require("../fixtures")
 const app = makeApp()
 const appWithOneActiveSession = makeApp({}, sessionFixtures.oneSession)
 const appWithOneItemInCart = makeApp({}, sessionFixtures.sessionWithOneItem)
+const manyItemApp = makeApp({}, sessionFixtures.sessionWithManyItems)
 
 const fixtureCookie = sessionFixtures.sessionToken
 const endpoint = "/api/shoppingCart"
@@ -282,11 +283,42 @@ describe("PUT /api/shoppingCart", () => {
 
 describe("DELETE /api/shoppingCart", () => {
     // This is deleting cart item or whole cart
+    test("Deletes item at index and returns 200", async () => {
+        const api = request(manyItemApp)
+        const payload = getParams({ indexInCart: 1 })
+
+        const response = await api.delete(endpoint).send(payload).set("Cookie", fixtureCookie)
+
+        expect(response.status).toBe(200)
+    })
+
     describe("[Bad Actions]", () => {
-        test.todo("No cookie, returns 400")
-        test.todo("Cookie not found in sessions, returns 400")
-        test.todo("No index to delete, returns 400")
-        test.todo("Invalid index to delete, returns 400")
+        test("No cookie, returns 400", async () => {
+            const api = request(manyItemApp)
+            const payload = getParams()
+
+            const response = await api.delete(endpoint).send(payload)
+
+            expect(response.status).toBe(400)
+        })
+        test("Invalid index to delete, returns 400", async () => {
+            const api = request(manyItemApp)
+            const payload = getParams({ indexInCart: null })
+            const payloads = []
+            payloads.push( getParams({ indexInCart: undefined }) )
+            payloads.push( getParams({ indexInCart: null }) )
+            payloads.push( getParams({ indexInCart: { stuff: 12345 } }) )
+            payloads.push( getParams({ indexInCart: [1, 2, 3] }) )
+            payloads.push( getParams({ indexInCart: "abcdef" }) )
+            payloads.push( getParams({ indexInCart: 101 }) )
+            payloads.push( getParams({ indexInCart: -1 }) )
+
+            for (let i = 0; i < payloads.length; i++) {
+                const response = await api.delete(endpoint).send(payload).set("Cookie", fixtureCookie)
+
+                expect(response.status).toBe(400)
+            }
+        })
     })
 
     describe("[Bad Server Situations]", () => {
@@ -294,4 +326,14 @@ describe("DELETE /api/shoppingCart", () => {
         test.todo("Cannot reach database, delete cart item fails, returns 500")
         test.todo("Database fails to delete item, returns 500")
     })
+
+    function getParams (overrides = {}) {
+        const defaultParams = {
+            indexInCart: 0,
+        }
+    
+        const params = { ...defaultParams, ...overrides }
+    
+        return params
+    }
 })
