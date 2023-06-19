@@ -82,6 +82,35 @@ function makeApp (database, sessionsObject = {}) {
         res.status(statusCode).send(fetchShoppingCart(cookie))
     })
     
+    app.delete("/api/shoppingCart", (req, res) => {
+        const { cookie } = req.headers
+        const { indexInCart } = req.body
+
+        if (typeof indexInCart !== "number") {
+            return res.status(400).send("Invalid Index.")
+        }
+        
+        if (sessionNotFound(cookie)) {
+            return res.status(400).send("Invalid cookie")
+        }
+        
+        const cartToModify = fetchShoppingCart(cookie).shoppingCart
+
+        if (indexInCart < 0 || indexInCart >= cartToModify.length) {
+            return res.status(400).send("Invalid index.")
+        }
+
+        const statusCode = deleteCartItem({indexInCart, cartToModify})
+        res.status(statusCode).send(fetchShoppingCart(cookie))
+    })
+
+    function deleteCartItem(dataObject) {
+        const { indexInCart, cartToModify } = dataObject
+
+        cartToModify.splice(indexInCart, 1)
+        return 200
+    }
+
     function editCart(dataObject) {
         const { indexInCart, newAmount, cartToModify } = dataObject
 
@@ -153,6 +182,9 @@ function makeApp (database, sessionsObject = {}) {
     }
 
     function getStock (itemId) {
+        // TODO
+        // Check stock of an item, of given config (ex: COLOR)
+
         return stockDb[itemId]
     }
 
