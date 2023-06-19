@@ -1,7 +1,6 @@
 const express = require("express")
 const uuidv4 = require('uuid').v4
 const rateLimiterMiddleware = require("./rateLimiterMemoryMiddleware")
-const { restart } = require("nodemon")
 
 function makeApp (database, sessionsObject = {}) {
     const app = express()
@@ -130,11 +129,11 @@ function makeApp (database, sessionsObject = {}) {
         const { color, size } = params
         const allowedSizes = ["small", "medium", "large", "extraLarge"]
         const allowedColors = ["gray", "black", "white"]
-        if(!size || typeof size !== "string" || !allowedSizes.includes(size)) {
+        if(typeof size !== "string" || !allowedSizes.includes(size)) {
             return false
         }
 
-        if(!color || typeof color !== "string" || !allowedColors.includes(color)) {
+        if(typeof color !== "string" || !allowedColors.includes(color)) {
             return false
         }
 
