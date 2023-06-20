@@ -21,11 +21,12 @@ function makeApp (db, sessionsObject = {}) {
             sessions[sessionToken] = {type: "anon"}
             const { shoppingCart } = await db.createAndReturnUser({sessionToken})
             res.cookie(sessionToken, { httpOnly: true, secure: true, sameSite: "lax" })
-            return res.send(shoppingCart)
+            return res.send({ shoppingCart })
         }
         
-        const { shoppingCart } = await db.getUser({ sessiontoken: cookie })
-        res.send(shoppingCart)
+        console.log(cookie)
+        const { shoppingCart } = await db.getUser(cookie)
+        res.send({ shoppingCart })
     })
 
     app.post("/api/shoppingCart", (req, res) => {
