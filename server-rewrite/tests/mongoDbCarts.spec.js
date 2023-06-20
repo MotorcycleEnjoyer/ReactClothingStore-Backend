@@ -80,6 +80,44 @@ describe("Cart Model", () => {
             })
         }))
     })
+
+    test("Expect adding invalid item to return nothing", async () => {
+        const newProduct = "blablabla"
+    })
+
+    test("Expect removing item to do so, if it exists", async () => {
+        await cartModel.deleteCartItem(0, sessionToken)
+        
+        const cart = (await cartModel.getUser(sessionToken)).shoppingCart
+
+        expect(cart[0]).toStrictEqual(expect.objectContaining({
+            itemId: 2,
+            amount: 1,
+            params: expect.objectContaining({
+                color: "gray",
+                size: "medium"
+            })
+        }))
+    })
+
+    test("Expect removing final item, to return empty cart", async () => {
+        await cartModel.deleteCartItem(0, sessionToken)
+        
+        const cart = (await cartModel.getUser(sessionToken)).shoppingCart
+
+        expect(cart[0]).toBe(undefined)
+    })
+
+    test("Expect removing from empty cart, to return empty cart", async () => {
+        const response = await cartModel.deleteCartItem(0, sessionToken)
+        console.log(response)
+        
+        const cart = (await cartModel.getUser(sessionToken)).shoppingCart
+
+        expect(cart[0]).toBe(undefined)
+    })
+
+
     
     function getParams(override = {}) {
         const defaultParams = {
