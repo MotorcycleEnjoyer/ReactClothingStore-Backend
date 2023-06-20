@@ -1,7 +1,19 @@
 const mongoose = require("mongoose")
 
+async function connectToDatabase (location) {
+    try {
+        await mongoose.connect(location);
+      } catch (error) {
+        return false
+      }
+    return true
+}
+
 const cartSchema = new mongoose.Schema({
-    sessionToken: String,
+    sessionToken: {
+        type: String,
+        required: true,
+    },
     shoppingCart: []
 })
 const AnonModel = new mongoose.model("AnonCart", cartSchema)
@@ -120,4 +132,4 @@ async function deleteAnon (sessionToken) {
 
 
 
-module.exports = {getUser, createAndReturnUser, getAllUsers, deleteAnon, addToCart, deleteCartItem, editCartItem}
+module.exports = {getUser, createAndReturnUser, getAllUsers, deleteAnon, addToCart, deleteCartItem, editCartItem, connectToDatabase}
