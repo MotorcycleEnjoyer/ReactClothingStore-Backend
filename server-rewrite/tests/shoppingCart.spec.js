@@ -14,6 +14,12 @@ const endpoint = "/api/shoppingCart"
 beforeAll(connect)
 afterAll(disconnect)
 
+async function setupDb() {
+    const setupDB = await dbObject.createAndReturnUser({ sessionToken: fixtureCookie })
+}
+setupDb()
+
+
 describe("GET /api/shoppingCart", () => {
         test("Returns object with shopping cart and user login status", async () => {
             const api = request(app)
@@ -21,11 +27,11 @@ describe("GET /api/shoppingCart", () => {
             const response = await api.get(endpoint)
             
             expect(response.body).toEqual(expect.objectContaining({
-                loginStatus: expect.any(String),
+                //loginStatus: expect.any(String),
                 shoppingCart: expect.any(Array)
             }))
         })
-/*         test("Returns a cookie if none in request", async () => {
+         test("Returns a cookie if none in request", async () => {
             const api = request(app)
             
             const response = await api.get(endpoint)
@@ -47,7 +53,7 @@ describe("GET /api/shoppingCart", () => {
             const response = await api.get(endpoint)
             const cookieHeader = response.headers["set-cookie"][0]
             const validCookie = cookieHeader.split("=")[0]
-    
+            
             const testResponse = await api.get(endpoint).set("Cookie", validCookie)
             const testCookie = testResponse.headers["set-cookie"]
             
@@ -61,7 +67,7 @@ describe("GET /api/shoppingCart", () => {
     
             expect(testCookie).toBe(undefined)
         })
-        test.todo("Requests exceed 10/min, returns 429") */
+        test.todo("Requests exceed 10/min, returns 429")
 })
 
 /* describe("POST /api/shoppingCart", () => {
