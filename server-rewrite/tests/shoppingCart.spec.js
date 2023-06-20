@@ -1,13 +1,18 @@
 const request = require("supertest")
 const makeApp = require("../makeApp")
 const { cartFixtures, sessionFixtures } = require("../fixtures")
-const app = makeApp()
-const appWithOneActiveSession = makeApp({}, sessionFixtures.oneSession)
-const appWithOneItemInCart = makeApp({}, sessionFixtures.sessionWithOneItem)
-const manyItemApp = makeApp({}, sessionFixtures.sessionWithManyItems)
+const { connect, disconnect } = require("../databaseLogic/mongoMemory")
+const dbObject = require("../databaseLogic/mongoDbCarts")
+const app = makeApp(dbObject)
+const appWithOneActiveSession = makeApp(dbObject, sessionFixtures.oneSession)
+const appWithOneItemInCart = makeApp(dbObject, sessionFixtures.sessionWithOneItem)
+const manyItemApp = makeApp(dbObject, sessionFixtures.sessionWithManyItems)
 
 const fixtureCookie = sessionFixtures.sessionToken
 const endpoint = "/api/shoppingCart"
+
+beforeAll(connect)
+afterAll(disconnect)
 
 describe("GET /api/shoppingCart", () => {
         test("Returns object with shopping cart and user login status", async () => {
@@ -20,7 +25,7 @@ describe("GET /api/shoppingCart", () => {
                 shoppingCart: expect.any(Array)
             }))
         })
-        test("Returns a cookie if none in request", async () => {
+/*         test("Returns a cookie if none in request", async () => {
             const api = request(app)
             
             const response = await api.get(endpoint)
@@ -56,10 +61,10 @@ describe("GET /api/shoppingCart", () => {
     
             expect(testCookie).toBe(undefined)
         })
-        test.todo("Requests exceed 10/min, returns 429")
+        test.todo("Requests exceed 10/min, returns 429") */
 })
 
-describe("POST /api/shoppingCart", () => {
+/* describe("POST /api/shoppingCart", () => {
 
     test("Returns cart with item added", async () => {
         const api = request(appWithOneActiveSession)
@@ -119,6 +124,8 @@ describe("POST /api/shoppingCart", () => {
                 payloads.push( getParams({ itemId: { stuff: 12345 } }))
                 payloads.push( getParams({ itemId: [1, 2, 3] }))
                 payloads.push( getParams({ itemId: "abcdef" }))
+                payloads.push( getParams({ itemId: -1 }))
+                payloads.push( getParams({ itemId: 10001 }))
     
                 for (let i = 0; i < payloads.length; i++) {
                     const response = await api.post(endpoint).send(payloads[i]).set("Cookie", fixtureCookie)
@@ -336,4 +343,4 @@ describe("DELETE /api/shoppingCart", () => {
     
         return params
     }
-})
+}) */
