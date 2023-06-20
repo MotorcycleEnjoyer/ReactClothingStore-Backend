@@ -2,7 +2,7 @@ const express = require("express")
 const uuidv4 = require('uuid').v4
 const rateLimiterMiddleware = require("./rateLimiterMemoryMiddleware")
 
-function makeApp (database, sessionsObject = {}) {
+function makeApp (db, sessionsObject = {}) {
     const app = express()
     app.use(express.json())
     app.use("/helloWorld", rateLimiterMiddleware)
@@ -13,24 +13,26 @@ function makeApp (database, sessionsObject = {}) {
         res.json("Hello World!")
     })
 
-    app.get("/api/shoppingCart", (req, res) => {
+    app.get("/api/shoppingCart", async (req, res) => {
         const { cookie } = req.headers
 
         if (sessionNotFound(cookie)) {
-            const newCookie = uuidv4()
-            sessions[newCookie] = newSessionWithCart()
-            res.cookie(newCookie)
-            return res.send(fetchShoppingCart(newCookie))
+            const sessionToken = uuidv4()
+            sessions[sessionToken] = {type: "anon"}
+            const { shoppingCart } = await db.createAndReturnUser({sessionToken})
+            res.cookie(sessionToken, { httpOnly: true, secure: true, sameSite: "lax" })
+            return res.send(shoppingCart)
         }
         
-        res.send(fetchShoppingCart(cookie))
+        const { shoppingCart } = await db.getUser({ sessiontoken: cookie })
+        res.send(shoppingCart)
     })
 
     app.post("/api/shoppingCart", (req, res) => {
         const { cookie } = req.headers
         const { itemId, amount, params } = req.body
 
-        if (typeof itemId !== "number") {
+        if (typeof itemId !== "number" || itemId < 0 || itemId > 10000) {
             return res.status(400).send("No item to append!")
         }
 
