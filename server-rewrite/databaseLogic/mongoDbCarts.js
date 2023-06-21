@@ -65,12 +65,9 @@ async function deleteCartItem(indexToDelete, sessionToken){
     if(indexToDelete < 0 || indexToDelete >= user.shoppingCart.length){
         return user.shoppingCart
     }
-    let tempArr = user.shoppingCart.filter((item, index) => {
-        return index !== indexToDelete && item
-    })
-    user.shoppingCart = tempArr
+    user.shoppingCart.splice(indexToDelete, 1)
     await user.save()
-    return user.shoppingCart
+    return user
 }
 
 function areIdentical(oldData, newData){
@@ -91,7 +88,9 @@ async function editCartItem (dataObject, sessionToken) {
     if(indexInCart < 0 || indexInCart >= user.shoppingCart.length){
         return user.shoppingCart
     }
-    user.shoppingCart[indexInCart].amount = newAmount
+    let tempArr = user.shoppingCart[indexInCart]
+    tempArr.amount = newAmount
+    user.shoppingCart[indexInCart] = tempArr
     await user.save()
     return user
 }
