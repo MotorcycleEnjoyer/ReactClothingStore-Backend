@@ -70,7 +70,7 @@ describe("GET /api/shoppingCart", () => {
         test.todo("Requests exceed 10/min, returns 429")
 })
 
-/* describe("POST /api/shoppingCart", () => {
+describe("POST /api/shoppingCart", () => {
 
     test("Returns cart with item added", async () => {
         const api = request(appWithOneActiveSession)
@@ -192,7 +192,7 @@ describe("GET /api/shoppingCart", () => {
         })
         test.todo("Cannot reach Database, add to cart fails, returns 500")
         test.todo("Database fails to add to cart, returns 500")
-    })
+    }) 
     
     
     function getParams (overrides = {}) {
@@ -211,6 +211,7 @@ describe("GET /api/shoppingCart", () => {
     }
 })
 
+/*
 
 describe("PUT /api/shoppingCart", () => {
     // This is editing cart item
