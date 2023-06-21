@@ -66,9 +66,9 @@ function makeApp (db, sessionsObject = {}) {
         res.send({ shoppingCart, loginStatus })
     })
 
-    app.put("/api/shoppingCart", (req, res) => {
+    app.put("/api/shoppingCart", async(req, res) => {
         const { cookie } = req.headers
-        const { indexInCart, newAmount } = req.body
+        const { indexInCart, newAmount, itemId } = req.body
 
         if (typeof indexInCart !== "number") {
             return res.status(400).send("Invalid Index.")
@@ -82,14 +82,20 @@ function makeApp (db, sessionsObject = {}) {
             return res.status(400).send("Invalid cookie")
         }
         
-        const cartToModify = fetchShoppingCart(cookie).shoppingCart
-
-        if (indexInCart < 0 || indexInCart >= cartToModify.length) {
+        if (indexInCart < 0 || indexInCart >= 100) {
             return res.status(400).send("Invalid index.")
         }
 
-        const statusCode = editCart({indexInCart, newAmount, cartToModify})
-        res.status(statusCode).send(fetchShoppingCart(cookie))
+        if (typeof itemId !== "number" || itemId < 0 || itemId > 10000) {
+            return res.status(400).send("No item to append!")
+        }
+
+        if (itemIsInStock({ itemId, amount: newAmount })) {
+            const { shoppingCart, loginStatus } = await db.editCartItem({ indexInCart, newAmount }, cookie)
+            return res.send({ shoppingCart, loginStatus })
+        } else {
+            res.status(500).send("Not enough item in stock!")
+        }
     })
     
     app.delete("/api/shoppingCart", (req, res) => {
@@ -119,21 +125,6 @@ function makeApp (db, sessionsObject = {}) {
 
         cartToModify.splice(indexInCart, 1)
         return 200
-    }
-
-    function editCart(dataObject) {
-        const { indexInCart, newAmount, cartToModify } = dataObject
-
-        const itemId = cartToModify[indexInCart].itemId
-        const amount = newAmount
-        const item = { itemId, amount }
-
-        if(itemIsInStock(item)) {
-            cartToModify[indexInCart].amount = newAmount
-            return 200
-        } else {
-            return 500
-        }
     }
 
     function validateParams(params) {
