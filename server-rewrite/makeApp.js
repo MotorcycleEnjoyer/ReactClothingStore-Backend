@@ -92,6 +92,8 @@ function makeApp (db, sessionsObject = {}) {
 
         if (itemIsInStock({ itemId, amount: newAmount })) {
             const { shoppingCart, loginStatus } = await db.editCartItem({ indexInCart, newAmount }, cookie)
+            const person = await db.getUser(cookie)
+            console.log(person.shoppingCart)
             return res.send({ shoppingCart, loginStatus })
         } else {
             res.status(500).send("Not enough item in stock!")
@@ -134,7 +136,8 @@ function makeApp (db, sessionsObject = {}) {
     }
 
     const stockDb = {
-        1: 15
+        1: 15, 
+        2: 40
     }
 
     function getStock (itemId) {
