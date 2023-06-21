@@ -14,13 +14,17 @@ const cartSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    loginStatus: {
+        type: String,
+        required: true
+    },
     shoppingCart: []
 })
 const AnonModel = new mongoose.model("AnonCart", cartSchema)
 
 async function createAndReturnUser(payload) {
     const { sessionToken } = payload
-    const person = new AnonModel({ sessionToken })
+    const person = new AnonModel({ sessionToken, loginStatus: "anon" })
     await person.save()
     return person
 }
@@ -53,7 +57,7 @@ async function addToCart(newProduct, sessionToken){
         user.shoppingCart[indexOfIdenticalMatch] = tempArr[indexOfIdenticalMatch]
     }
     await user.save()
-    return user.shoppingCart
+    return user
 }
 
 async function deleteCartItem(indexToDelete, sessionToken){
