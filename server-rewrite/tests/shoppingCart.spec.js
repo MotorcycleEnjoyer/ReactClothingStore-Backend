@@ -3,10 +3,7 @@ const makeApp = require("../makeApp")
 const { cartFixtures, sessionFixtures } = require("../fixtures")
 const { connect, disconnect } = require("../databaseLogic/mongoMemory")
 const dbObject = require("../databaseLogic/mongoDbCarts")
-const app = makeApp(dbObject)
 const appWithOneActiveSession = makeApp(dbObject, sessionFixtures.oneSession)
-const appWithOneItemInCart = makeApp(dbObject, sessionFixtures.sessionWithOneItem)
-const manyItemApp = makeApp(dbObject, sessionFixtures.sessionWithManyItems)
 
 const fixtureCookie = sessionFixtures.sessionToken
 const endpoint = "/api/shoppingCart"
@@ -22,7 +19,7 @@ setupDb()
 
 describe("GET /api/shoppingCart", () => {
         test("Returns object with shopping cart and user login status", async () => {
-            const api = request(app)
+            const api = request(appWithOneActiveSession)
     
             const response = await api.get(endpoint)
             
@@ -32,7 +29,7 @@ describe("GET /api/shoppingCart", () => {
             }))
         })
          test("Returns a cookie if none in request", async () => {
-            const api = request(app)
+            const api = request(appWithOneActiveSession)
             
             const response = await api.get(endpoint)
             const cookie = response.headers["set-cookie"]
@@ -40,7 +37,7 @@ describe("GET /api/shoppingCart", () => {
             expect(cookie).toBeDefined()
         })
         test("Returns a cookie if session not found on server", async () => {
-            const api = request(app)
+            const api = request(appWithOneActiveSession)
             const sentCookie = "abcdefghijklmnop"
     
             const response = await api.get(endpoint).set("Cookie", sentCookie)
@@ -49,7 +46,7 @@ describe("GET /api/shoppingCart", () => {
             expect(cookie).toBeDefined()
         })
         test("Does NOT return a cookie if session is found on server", async () => {
-            const api = request(app)
+            const api = request(appWithOneActiveSession)
             const response = await api.get(endpoint)
             const cookieHeader = response.headers["set-cookie"][0]
             const validCookie = cookieHeader.split("=")[0]
@@ -82,17 +79,26 @@ describe("POST /api/shoppingCart", () => {
     })
 
     test("Adding duplicate item increments it in cart", async () => {
-        const api = request(appWithOneItemInCart)
+        const api = request(appWithOneActiveSession)
         const payload = getParams()
         
         const response = await api.post(endpoint).send(payload).set("Cookie", fixtureCookie)
 
         expect(response.body).toStrictEqual(cartFixtures.duplicateItemOneCart)
     })
+
+    test("Adding unique item pushes to cart", async () => {
+        const api = request(appWithOneActiveSession)
+        const payload = getParams({ itemId: 2, amount: 3 })
+
+        const response = await api.post(endpoint).send(payload).set("Cookie", fixtureCookie)
+
+        expect(response.body).toStrictEqual(cartFixtures.itemTwoCart)
+    })
     
     describe("[Bad Actions]", () => {
         test("No cookie, returns new cart with that item and a cookie", async () => {
-            const api = request(app)
+            const api = request(appWithOneActiveSession)
             const payload = getParams()
     
             const response = await api.post(endpoint).send(payload)
@@ -103,10 +109,11 @@ describe("POST /api/shoppingCart", () => {
             expect(cookie).toBeDefined()
         })
         test("Session not found, returns new cart with that item and a cookie", async () => {
-            const api = request(app)
+            const api = request(appWithOneActiveSession)
             const payload = getParams()
+            const sentCookie = "abcdefghijklmnop"
     
-            const response = await api.post(endpoint).send(payload).set("Cookie", fixtureCookie)
+            const response = await api.post(endpoint).send(payload).set("Cookie", sentCookie)
             const responseCookie = response.headers["set-cookie"][0]
             const cookie = responseCookie.split("=")[0]
             
@@ -214,7 +221,7 @@ describe("POST /api/shoppingCart", () => {
 describe("PUT /api/shoppingCart", () => {
     // This is editing cart item
     test("Returns shopping cart with amount updated on item, if in stock", async () => {
-        const api = request(appWithOneItemInCart)
+        const api = request(appWithOneActiveSession)
         const payload = getParams()
 
         const response = await api.put(endpoint).send(payload).set("Cookie", fixtureCookie)
@@ -225,7 +232,7 @@ describe("PUT /api/shoppingCart", () => {
 
     describe("[Bad actions]", () => {
         test("No cookie, returns status code 400", async () => {
-            const api = request(appWithOneItemInCart)
+            const api = request(appWithOneActiveSession)
             const payload = getParams()
 
             const response = await api.put(endpoint).send(payload)
@@ -270,7 +277,7 @@ describe("PUT /api/shoppingCart", () => {
 
     describe("[Bad Server Situations]", () => {
         test("Item of edit configuration is out of stock, returns 500", async () => {
-            const api = request(appWithOneItemInCart)
+            const api = request(appWithOneActiveSession)
             const payload = getParams( { newAmount: 16 })
 
             const response = await api.put(endpoint).send(payload).set("Cookie", fixtureCookie)
@@ -293,21 +300,22 @@ describe("PUT /api/shoppingCart", () => {
         return params
     }
 })
-/*
+
 describe("DELETE /api/shoppingCart", () => {
     // This is deleting cart item or whole cart
-    test("Deletes item at index and returns 200", async () => {
-        const api = request(manyItemApp)
+    test("Deletes item at index, returns cart and status 200", async () => {
+        const api = request(appWithOneActiveSession)
         const payload = getParams({ indexInCart: 1 })
 
         const response = await api.delete(endpoint).send(payload).set("Cookie", fixtureCookie)
 
         expect(response.status).toBe(200)
+        expect(response.body).toStrictEqual(cartFixtures.duplicateItemOneCart)
     })
 
     describe("[Bad Actions]", () => {
         test("No cookie, returns 400", async () => {
-            const api = request(manyItemApp)
+            const api = request(appWithOneActiveSession)
             const payload = getParams()
 
             const response = await api.delete(endpoint).send(payload)
@@ -315,7 +323,7 @@ describe("DELETE /api/shoppingCart", () => {
             expect(response.status).toBe(400)
         })
         test("Invalid index to delete, returns 400", async () => {
-            const api = request(manyItemApp)
+            const api = request(appWithOneActiveSession)
             const payload = getParams({ indexInCart: null })
             const payloads = []
             payloads.push( getParams({ indexInCart: undefined }) )
@@ -349,4 +357,4 @@ describe("DELETE /api/shoppingCart", () => {
     
         return params
     }
-}) */
+})
