@@ -1,6 +1,7 @@
 const express = require("express")
 const uuidv4 = require('uuid').v4
 const rateLimiterMiddleware = require("./rateLimiterMemoryMiddleware")
+const { validate } = require("uuid")
 
 function makeApp (db, sessionsObject = {}) {
     const app = express()
@@ -19,17 +20,16 @@ function makeApp (db, sessionsObject = {}) {
         if (sessionNotFound(cookie)) {
             const sessionToken = uuidv4()
             sessions[sessionToken] = {type: "anon"}
-            const { shoppingCart } = await db.createAndReturnUser({sessionToken})
+            const { shoppingCart, loginStatus } = await db.createAndReturnUser({sessionToken})
             res.cookie(sessionToken, { httpOnly: true, secure: true, sameSite: "lax" })
-            return res.send({ shoppingCart })
+            return res.send({ shoppingCart, loginStatus })
         }
         
-        console.log(cookie)
-        const { shoppingCart } = await db.getUser(cookie)
-        res.send({ shoppingCart })
+        const { shoppingCart, loginStatus } = await db.getUser(cookie)
+        res.send({ shoppingCart, loginStatus })
     })
 
-    app.post("/api/shoppingCart", (req, res) => {
+    app.post("/api/shoppingCart", async (req, res) => {
         const { cookie } = req.headers
         const { itemId, amount, params } = req.body
 
@@ -41,21 +41,29 @@ function makeApp (db, sessionsObject = {}) {
             return res.status(400).send("Invalid amount")
         }
 
-        if (!params) {
+        if (!params || !params.color || !params.size) {
             return res.status(400).send("Invalid params")
         }
 
         let cartId = cookie
         if (sessionNotFound(cartId)) {
             cartId = uuidv4()
-            const newUserObject = newSessionWithCart()
-            sessions[cartId] = newUserObject
-            res.cookie(cartId)
+            sessions[cartId] = {type: "anon"}
+            const person = await db.createAndReturnUser({sessionToken: cartId})
+            res.cookie(cartId, { httpOnly: true, secure: true, sameSite: "lax" })
         }
 
-        const cartToModify = fetchShoppingCart(cartId).shoppingCart
-        const statusCode = addToCart({itemId, amount, params}, cartToModify)
-        res.status(statusCode).send(fetchShoppingCart(cartId))
+        if (validateParams(params)) {
+            if (itemIsInStock({ itemId, amount, params })) {
+                await db.addToCart({ itemId, amount, params }, cartId)
+            } else {
+                return res.status(500).json("Not enough item in stock!")
+            }
+        } else {
+            return res.status(400).json("Invalid parameters")
+        }
+        const { shoppingCart, loginStatus } = await db.getUser(cartId)
+        res.send({ shoppingCart, loginStatus })
     })
 
     app.put("/api/shoppingCart", (req, res) => {
@@ -143,42 +151,6 @@ function makeApp (db, sessionsObject = {}) {
         return true
     }
 
-    function indexOfDuplicateInCart (object, cart) {
-        const status = cart.findIndex((x) => {
-            if(x.itemId === object.itemId) {
-                const keys = Object.keys(x.params)
-                let allEqual = true
-                for (let i = 0; i < keys.length; i++){
-                    if(object.params[keys[i]] !== x.params[keys[i]]) {
-                        allEqual = false
-                    }
-                }
-                if (allEqual) {
-                    return x
-                }
-            }
-        })
-        return status
-    }
-
-    function addToCart(object, cart) {
-        if (validateParams(object.params)) {
-            if (itemIsInStock(object)) {
-                const index = indexOfDuplicateInCart(object, cart) 
-                if (index === -1) {
-                    cart.push(object)
-                } else {
-                    cart[index].amount += object.amount
-                }
-                return 200
-            } else {
-                return 500
-            }
-        } else {
-            return 400
-        }
-    }
-
     const stockDb = {
         1: 15
     }
@@ -206,14 +178,7 @@ function makeApp (db, sessionsObject = {}) {
     function fetchShoppingCart (cookie) {
         return sessions[cookie]
     }
-
-    function newSessionWithCart () {
-        return {
-            loginStatus: "anon",
-            shoppingCart: []
-        }
-    }
-
+    
     return app
 }
 
