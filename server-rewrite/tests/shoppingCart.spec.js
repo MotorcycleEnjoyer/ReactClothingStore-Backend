@@ -211,8 +211,6 @@ describe("POST /api/shoppingCart", () => {
     }
 })
 
-/*
-
 describe("PUT /api/shoppingCart", () => {
     // This is editing cart item
     test("Returns shopping cart with amount updated on item, if in stock", async () => {
@@ -286,6 +284,7 @@ describe("PUT /api/shoppingCart", () => {
     function getParams (overrides = {}) {
         const defaultParams = {
             indexInCart: 0,
+            itemId: 1,
             newAmount: 10
         }
     
@@ -294,7 +293,7 @@ describe("PUT /api/shoppingCart", () => {
         return params
     }
 })
-
+/*
 describe("DELETE /api/shoppingCart", () => {
     // This is deleting cart item or whole cart
     test("Deletes item at index and returns 200", async () => {
