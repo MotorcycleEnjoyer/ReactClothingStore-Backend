@@ -310,7 +310,7 @@ describe("DELETE /api/shoppingCart", () => {
         const response = await api.delete(endpoint).send(payload).set("Cookie", fixtureCookie)
 
         expect(response.status).toBe(200)
-        expect(response.body).toStrictEqual(cartFixtures.duplicateItemOneCart)
+        expect(response.body).toStrictEqual(cartFixtures.finalCart)
     })
 
     describe("[Bad Actions]", () => {
