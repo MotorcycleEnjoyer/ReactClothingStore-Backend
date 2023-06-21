@@ -87,6 +87,17 @@ function areIdentical(oldData, newData){
 
 async function editCartItem (dataObject, sessionToken) {
     let user = await getUser(sessionToken)
+    const { indexInCart, newAmount } = dataObject
+    if(indexInCart < 0 || indexInCart >= user.shoppingCart.length){
+        return user.shoppingCart
+    }
+    user.shoppingCart[indexInCart].amount = newAmount
+    await user.save()
+    return user
+}
+/*
+async function editCartItem (dataObject, sessionToken) {
+    let user = await getUser(sessionToken)
     const { productId, oldUserChoices, newUserChoices, index, amount } = dataObject
     if(index < 0 || index >= user.shoppingCart.length){
         return user.shoppingCart
@@ -125,7 +136,7 @@ async function editCartItem (dataObject, sessionToken) {
         return user.shoppingCart
     }
 }
-
+*/
 async function deleteAnon (sessionToken) {
     if(sessionToken === null)
         return null
