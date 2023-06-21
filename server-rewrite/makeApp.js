@@ -66,7 +66,7 @@ function makeApp (db, sessionsObject = {}) {
         res.send({ shoppingCart, loginStatus })
     })
 
-    app.put("/api/shoppingCart", async(req, res) => {
+    app.put("/api/shoppingCart", async (req, res) => {
         const { cookie } = req.headers
         const { indexInCart, newAmount, itemId } = req.body
 
@@ -98,11 +98,11 @@ function makeApp (db, sessionsObject = {}) {
         }
     })
     
-    app.delete("/api/shoppingCart", (req, res) => {
+    app.delete("/api/shoppingCart", async (req, res) => {
         const { cookie } = req.headers
         const { indexInCart } = req.body
 
-        if (typeof indexInCart !== "number") {
+        if (typeof indexInCart !== "number" || indexInCart < 0 || indexInCart > 100) {
             return res.status(400).send("Invalid Index.")
         }
         
@@ -110,22 +110,13 @@ function makeApp (db, sessionsObject = {}) {
             return res.status(400).send("Invalid cookie")
         }
         
-        const cartToModify = fetchShoppingCart(cookie).shoppingCart
-
-        if (indexInCart < 0 || indexInCart >= cartToModify.length) {
+        if (indexInCart < 0 || indexInCart >= 100) {
             return res.status(400).send("Invalid index.")
         }
 
-        const statusCode = deleteCartItem({indexInCart, cartToModify})
-        res.status(statusCode).send(fetchShoppingCart(cookie))
+        const { shoppingCart, loginStatus } = await db.deleteCartItem(indexInCart, cookie)
+        res.send({ shoppingCart, loginStatus })
     })
-
-    function deleteCartItem(dataObject) {
-        const { indexInCart, cartToModify } = dataObject
-
-        cartToModify.splice(indexInCart, 1)
-        return 200
-    }
 
     function validateParams(params) {
         const { color, size } = params
@@ -166,10 +157,6 @@ function makeApp (db, sessionsObject = {}) {
         return sessions[cookie] === undefined
     }
 
-    function fetchShoppingCart (cookie) {
-        return sessions[cookie]
-    }
-    
     return app
 }
 
