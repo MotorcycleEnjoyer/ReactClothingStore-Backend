@@ -1,5 +1,4 @@
 const express = require("express");
-const uuidv4 = require("uuid").v4;
 const shoppingCartRouter = require("./routes/api/ShoppingCart");
 
 function makeApp(db, sessionsObject = {}) {
