@@ -1,12 +1,13 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
+const { dummyProducts } = require("../dummyProductDb");
 
-async function connectToDatabase (location) {
+async function connectToDatabase(location) {
     try {
         await mongoose.connect(location);
-      } catch (error) {
-        return false
-      }
-    return true
+    } catch (error) {
+        return false;
+    }
+    return true;
 }
 
 const cartSchema = new mongoose.Schema({
@@ -16,83 +17,121 @@ const cartSchema = new mongoose.Schema({
     },
     loginStatus: {
         type: String,
-        required: true
+        required: true,
     },
-    shoppingCart: []
-})
-const AnonModel = new mongoose.model("AnonCart", cartSchema)
+    shoppingCart: [],
+});
+const AnonModel = new mongoose.model("AnonCart", cartSchema);
+
+const productSchema = new mongoose.Schema({
+    details: {
+        id: Number,
+        name: String,
+        manufacturerOrBrand: String,
+        typeOfClothing: String,
+        colorOptions: Array,
+        amountInStockPerColor: {},
+        weight: {
+            grams: Number,
+        },
+        price: Number,
+        materials: { polyester: String, Cotton: String },
+        imageName: String,
+    },
+    userSelectedParameters: {},
+    amount: Number,
+});
+
+const ProductModel = new mongoose.model("Products", productSchema);
+
+async function getAllProducts() {
+    const products = await ProductModel.find();
+    return products;
+}
+
+async function searchAndReturnProducts(query) {
+    const queryRegex = new RegExp(query, "i");
+    const products = await ProductModel.find({
+        details: { name: queryRegex },
+    });
+    return products;
+}
+
+async function createDummyDB() {
+    await ProductModel.insertMany(dummyProducts);
+}
 
 async function createAndReturnUser(payload) {
-    const { sessionToken } = payload
-    const person = new AnonModel({ sessionToken, loginStatus: "anon" })
-    await person.save()
-    return person
+    const { sessionToken } = payload;
+    const person = new AnonModel({ sessionToken, loginStatus: "anon" });
+    await person.save();
+    return person;
 }
 
-async function getUser(sessionToken){
-    const person = await AnonModel.findOne({sessionToken})
-    return person
+async function getUser(sessionToken) {
+    const person = await AnonModel.findOne({ sessionToken });
+    return person;
 }
 
-async function getAllUsers(){
-    const everyone = await AnonModel.find({})
-    return everyone
+async function getAllUsers() {
+    const everyone = await AnonModel.find({});
+    return everyone;
 }
 
-async function addToCart(newProduct, sessionToken){
-    const user = await getUser(sessionToken)
-    let tempArr = user.shoppingCart
+async function addToCart(newProduct, sessionToken) {
+    const user = await getUser(sessionToken);
+    let tempArr = user.shoppingCart;
 
     const indexOfIdenticalMatch = tempArr.findIndex((item) => {
         if (item.itemId === newProduct.itemId)
-            if (areIdentical(item.params, newProduct.params)) { 
-                return item
+            if (areIdentical(item.params, newProduct.params)) {
+                return item;
             }
-    })
-    if( indexOfIdenticalMatch === -1) {
-        tempArr.push(newProduct)
-        user.shoppingCart = tempArr
+    });
+    if (indexOfIdenticalMatch === -1) {
+        tempArr.push(newProduct);
+        user.shoppingCart = tempArr;
     } else {
-        tempArr[indexOfIdenticalMatch].amount += newProduct.amount
-        user.shoppingCart[indexOfIdenticalMatch] = tempArr[indexOfIdenticalMatch]
+        tempArr[indexOfIdenticalMatch].amount += newProduct.amount;
+        user.shoppingCart[indexOfIdenticalMatch] =
+            tempArr[indexOfIdenticalMatch];
     }
-    await user.save()
-    return user
+    await user.save();
+    return user;
 }
 
-async function deleteCartItem(indexToDelete, sessionToken){
-    let user = await getUser(sessionToken)
-    if(indexToDelete < 0 || indexToDelete >= user.shoppingCart.length){
-        return user.shoppingCart
+async function deleteCartItem(indexToDelete, sessionToken) {
+    let user = await getUser(sessionToken);
+    if (indexToDelete < 0 || indexToDelete >= user.shoppingCart.length) {
+        return user.shoppingCart;
     }
-    user.shoppingCart.splice(indexToDelete, 1)
-    await user.save()
-    return user
+    user.shoppingCart.splice(indexToDelete, 1);
+    await user.save();
+    return user;
 }
 
-function areIdentical(oldData, newData){
-    let categories = Object.keys(oldData)
-    let allMatch = true
-    for(const key of categories){
-        if(newData[key] !== oldData[key])
-        {
-            allMatch = false
+function areIdentical(oldData, newData) {
+    let categories = Object.keys(oldData);
+    let allMatch = true;
+    for (const key of categories) {
+        if (newData[key] !== oldData[key]) {
+            allMatch = false;
         }
-    }    
-    return allMatch
+    }
+    return allMatch;
 }
 
-async function editCartItem (dataObject, sessionToken) {
-    let user = await getUser(sessionToken)
-    const { indexInCart, newAmount } = dataObject
-    if(indexInCart < 0 || indexInCart >= user.shoppingCart.length){
-        return user.shoppingCart
+async function editCartItem(dataObject, sessionToken) {
+    let user = await getUser(sessionToken);
+    const { indexInCart, newAmount } = dataObject;
+    if (indexInCart < 0 || indexInCart >= user.shoppingCart.length) {
+        return user.shoppingCart;
     }
-    let tempArr = user.shoppingCart[indexInCart]
-    tempArr.amount = newAmount
-    user.shoppingCart[indexInCart] = tempArr
-    await user.save()
-    return user
+    let tempArr = user.shoppingCart[indexInCart];
+    tempArr.amount = newAmount;
+    user.shoppingCart[indexInCart] = tempArr;
+    await user.save();
+    return user;
 }
 /*
 async function editCartItem (dataObject, sessionToken) {
@@ -136,14 +175,23 @@ async function editCartItem (dataObject, sessionToken) {
     }
 }
 */
-async function deleteAnon (sessionToken) {
-    if(sessionToken === null)
-        return null
-    
-    const result = await AnonModel.deleteOne({ sessionToken })
-    return result.deletedCount === 1
+async function deleteAnon(sessionToken) {
+    if (sessionToken === null) return null;
+
+    const result = await AnonModel.deleteOne({ sessionToken });
+    return result.deletedCount === 1;
 }
 
-
-
-module.exports = {getUser, createAndReturnUser, getAllUsers, deleteAnon, addToCart, deleteCartItem, editCartItem, connectToDatabase}
+module.exports = {
+    getUser,
+    createAndReturnUser,
+    getAllUsers,
+    deleteAnon,
+    addToCart,
+    deleteCartItem,
+    editCartItem,
+    connectToDatabase,
+    getAllProducts,
+    searchAndReturnProducts,
+    createDummyDB,
+};
