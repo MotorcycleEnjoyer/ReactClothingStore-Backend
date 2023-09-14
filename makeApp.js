@@ -1,5 +1,6 @@
 const express = require("express");
 const shoppingCartRouter = require("./routes/api/ShoppingCart");
+const searchRouter = require("./routes/api/Search");
 const path = require("path");
 
 function makeApp(db, sessionsObject = {}) {
@@ -15,8 +16,9 @@ function makeApp(db, sessionsObject = {}) {
 
     app.use("/api/shoppingCart", shoppingCartRouter({ sessions, db, stockDb }));
 
+    app.use("/api/s", searchRouter({ db }));
+
     app.get("/*", (req, res) => {
-        console.log("/ path");
         res.sendFile(path.join(__dirname, "build", "index.html"));
     });
 
