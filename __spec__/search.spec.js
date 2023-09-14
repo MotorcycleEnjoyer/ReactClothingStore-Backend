@@ -1,6 +1,10 @@
 const request = require("supertest");
 const makeApp = require("../makeApp");
-const { cartFixtures, sessionFixtures } = require("../fixtures");
+const {
+    cartFixtures,
+    sessionFixtures,
+    productFixtures,
+} = require("../fixtures");
 const { connect, disconnect } = require("../databaseLogic/mongoMemory");
 const dbObject = require("../databaseLogic/mongoDbCarts");
 const app = makeApp(dbObject, {});
@@ -12,12 +16,6 @@ afterAll(disconnect);
 
 async function setupDb() {
     const makeDB = await dbObject.createDummyDB();
-    const products = await dbObject.getAllProducts();
-    console.log("*************************PRODUCTS*************************");
-    console.log(products);
-    console.log(
-        "***************************************************************************"
-    );
 }
 setupDb();
 
@@ -50,14 +48,36 @@ describe("GET /api/s", () => {
     });
 
     describe("Happy Path", () => {
-        test("expect k=shirt status 200", async () => {
+        test("expect k=shirt status 200, return value matches fixtures", async () => {
             const api = request(app);
             const finalEndpoint = endpoint + "shirt";
 
             const response = await api.get(finalEndpoint);
 
             expect(response.statusCode).toEqual(200);
-            // expect(response.body).toEqual([]);
+            expect(response.body[0].details.name).toEqual("Generic T Shirt");
+            expect(response.body[1].details.name).toEqual("Specific T Shirt");
+            expect(response.body[2].details.name).toEqual("Some T Shirt");
+
+            for (let i = 0; i < response.body.length; i++) {
+                const product = response.body[i];
+
+                expect(product.details).toStrictEqual(
+                    productFixtures.everything[i].details
+                );
+            }
+        });
+        test("expect k=specific status 200, return value matches fixtures", async () => {
+            const api = request(app);
+            const finalEndpoint = endpoint + "specific";
+
+            const response = await api.get(finalEndpoint);
+
+            expect(response.statusCode).toEqual(200);
+            const product = response.body[0];
+            expect(product.details).toStrictEqual(
+                productFixtures.everything[1].details
+            );
         });
     });
 });

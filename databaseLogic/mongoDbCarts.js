@@ -35,7 +35,7 @@ const productSchema = new mongoose.Schema({
             grams: Number,
         },
         price: Number,
-        materials: { polyester: String, Cotton: String },
+        materials: { polyester: String, cotton: String },
         imageName: String,
     },
     userSelectedParameters: {},
@@ -50,9 +50,9 @@ async function getAllProducts() {
 }
 
 async function searchAndReturnProducts(query) {
-    const queryRegex = new RegExp(query, "i");
+    const queryExpression = new RegExp(query, "i");
     const products = await ProductModel.find({
-        details: { name: queryRegex },
+        "details.name": { $regex: queryExpression },
     });
     return products;
 }
