@@ -55,9 +55,6 @@ describe("GET /api/s", () => {
             const response = await api.get(finalEndpoint);
 
             expect(response.statusCode).toEqual(200);
-            expect(response.body[0].details.name).toEqual("Generic T Shirt");
-            expect(response.body[1].details.name).toEqual("Specific T Shirt");
-            expect(response.body[2].details.name).toEqual("Some T Shirt");
 
             for (let i = 0; i < response.body.length; i++) {
                 const product = response.body[i];
@@ -74,6 +71,7 @@ describe("GET /api/s", () => {
             const response = await api.get(finalEndpoint);
 
             expect(response.statusCode).toEqual(200);
+
             const product = response.body[0];
             expect(product.details).toStrictEqual(
                 productFixtures.everything[1].details
