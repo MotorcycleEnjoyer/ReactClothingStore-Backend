@@ -16,6 +16,10 @@ const wrapper = ({ db }) => {
         res.send(response);
     });
 
+    router.all("/", function (req, res) {
+        return res.status(404).send();
+    });
+
     return router;
 };
 
