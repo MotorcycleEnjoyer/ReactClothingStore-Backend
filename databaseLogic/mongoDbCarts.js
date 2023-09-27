@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { dummyProducts } = require("../dummyProductDb");
+const { dummyProducts } = require("../DummyProductDB");
 
 async function connectToDatabase(location) {
     try {
