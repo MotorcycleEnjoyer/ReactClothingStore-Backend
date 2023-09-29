@@ -6,8 +6,9 @@ const wrapper = ({ sessions, db, stockDb }) => {
 
     router.get("/", async (req, res) => {
         const { cookie } = req.headers;
+        const sessionId = getSession(cookie);
 
-        if (sessionNotFound(cookie)) {
+        if (!sessionId) {
             // returns sessionToken, LoginStatus, ShoppingCart
             const { sessionToken, shoppingCart, loginStatus } =
                 await makeSessionAndUser();
@@ -18,8 +19,7 @@ const wrapper = ({ sessions, db, stockDb }) => {
             });
             return res.send({ shoppingCart, loginStatus });
         }
-
-        const { shoppingCart, loginStatus } = await db.getUser(cookie);
+        const { shoppingCart, loginStatus } = await db.getUser(sessionId);
         res.send({ shoppingCart, loginStatus });
     });
 
@@ -39,11 +39,11 @@ const wrapper = ({ sessions, db, stockDb }) => {
             return res.status(400).send("Invalid params");
         }
 
-        let cartId = cookie;
+        let cartId = getSession(cookie);
         if (sessionNotFound(cartId)) {
             cartId = uuidv4();
-            sessions[cartId] = { type: "anon" };
-            const person = await db.createAndReturnUser({
+            sessions[cartId] = { type: "guest" };
+            const person = await db.createAndReturnGuest({
                 sessionToken: cartId,
             });
             res.cookie(cartId, {
@@ -69,6 +69,10 @@ const wrapper = ({ sessions, db, stockDb }) => {
     router.put("/", async (req, res) => {
         const { cookie } = req.headers;
         const { indexInCart, newAmount, itemId } = req.body;
+        const sessionId = getSession(cookie);
+        if (!sessionId) {
+            return res.status(400).send("Invalid cookie");
+        }
 
         if (typeof indexInCart !== "number") {
             return res.status(400).send("Invalid Index.");
@@ -76,10 +80,6 @@ const wrapper = ({ sessions, db, stockDb }) => {
 
         if (typeof newAmount !== "number" || newAmount < 0 || newAmount > 100) {
             return res.status(400).send("Invalid new amount.");
-        }
-
-        if (sessionNotFound(cookie)) {
-            return res.status(400).send("Invalid cookie");
         }
 
         if (indexInCart < 0 || indexInCart >= 100) {
@@ -93,10 +93,8 @@ const wrapper = ({ sessions, db, stockDb }) => {
         if (itemIsInStock({ itemId, amount: newAmount })) {
             const { shoppingCart, loginStatus } = await db.editCartItem(
                 { indexInCart, newAmount },
-                cookie
+                sessionId
             );
-            const person = await db.getUser(cookie);
-            console.log(person.shoppingCart);
             return res.send({ shoppingCart, loginStatus });
         } else {
             res.status(500).send("Not enough item in stock!");
@@ -107,6 +105,12 @@ const wrapper = ({ sessions, db, stockDb }) => {
         const { cookie } = req.headers;
         const { indexInCart } = req.body;
 
+        const sessionId = getSession(cookie);
+
+        if (!sessionId) {
+            return res.status(400).send("No session.");
+        }
+
         if (
             typeof indexInCart !== "number" ||
             indexInCart < 0 ||
@@ -115,9 +119,7 @@ const wrapper = ({ sessions, db, stockDb }) => {
             return res.status(400).send("Invalid Index.");
         }
 
-        if (sessionNotFound(cookie)) {
-            return res.status(400).send("Invalid cookie");
-        }
+        console.log("YES");
 
         if (indexInCart < 0 || indexInCart >= 100) {
             return res.status(400).send("Invalid index.");
@@ -125,10 +127,26 @@ const wrapper = ({ sessions, db, stockDb }) => {
 
         const { shoppingCart, loginStatus } = await db.deleteCartItem(
             indexInCart,
-            cookie
+            sessionId
         );
+        console.log(shoppingCart);
+        console.log(loginStatus);
         res.send({ shoppingCart, loginStatus });
     });
+
+    function getSession(cookie) {
+        if (typeof cookie !== "string") {
+            console.log("COOKIE NOT FOUND");
+            return undefined;
+        }
+        const sessionId = cookie.split("=")[1];
+        const userSession = sessions[sessionId];
+        if (!userSession) {
+            console.log("USER SESSION NOT FOUND");
+            return undefined;
+        }
+        return sessionId;
+    }
 
     function validateParams(params) {
         const { color, size } = params;
@@ -167,8 +185,8 @@ const wrapper = ({ sessions, db, stockDb }) => {
 
     async function makeSessionAndUser() {
         const sessionToken = uuidv4();
-        sessions[sessionToken] = { type: "anon" };
-        const { shoppingCart, loginStatus } = await db.createAndReturnUser({
+        sessions[sessionToken] = { type: "guest" };
+        const { shoppingCart, loginStatus } = await db.createAndReturnGuest({
             sessionToken,
         });
         return { sessionToken, shoppingCart, loginStatus };
