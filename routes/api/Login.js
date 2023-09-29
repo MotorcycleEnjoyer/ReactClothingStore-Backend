@@ -1,5 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
+const uuidv4 = require("uuid").v4;
 
 const wrapper = ({ sessions, db }) => {
     const router = express.Router();
@@ -49,12 +50,10 @@ const wrapper = ({ sessions, db }) => {
                     username: username,
                 };
                 delete sessions[sessionId];
-                await mongoHelper.deleteAnon({
-                    temporaryAnonCookie: sessionId,
-                });
+                await db.deleteGuest(sessionId);
                 let csrfToken = uuidv4();
                 sessions[newSessionToken].csrfToken = csrfToken;
-                saveSessions();
+                // saveSessions();
                 res.cookie("session", `${newSessionToken}`, {
                     httpOnly: true,
                     secure: true,
@@ -64,7 +63,7 @@ const wrapper = ({ sessions, db }) => {
             } else {
                 console.log("POST/login: bad creds BECAUSE BCRYPT FAILED");
                 return res
-                    .status(401)
+                    .status(400)
                     .send("Incorrect credentials. Please try again");
             }
         });
