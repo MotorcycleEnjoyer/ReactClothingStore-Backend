@@ -92,11 +92,12 @@ async function createAndReturnUser(payload) {
 }
 
 async function getUser(sessionToken) {
+    let person = null;
     if (typeof sessionToken !== "string") {
         const { username } = sessionToken;
-        const person = await UserModel.findOne({ username });
+        person = await UserModel.findOne({ username });
     } else {
-        const person = await GuestModel.findOne({ sessionToken });
+        person = await GuestModel.findOne({ sessionToken });
     }
     return person;
 }
