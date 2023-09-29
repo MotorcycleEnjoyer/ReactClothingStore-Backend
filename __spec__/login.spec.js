@@ -5,6 +5,7 @@ const { connect, disconnect } = require("../databaseLogic/mongoMemory");
 const dbObject = require("../databaseLogic/mongoDbCarts");
 const app = makeApp(dbObject);
 const appWithOneActiveSession = makeApp(dbObject, sessionFixtures.oneSession);
+const bcrypt = require("bcrypt");
 
 const fixtureCookie = sessionFixtures.sessionToken;
 const endpoint = "/api/login";
@@ -13,7 +14,28 @@ beforeAll(connect);
 afterAll(disconnect);
 
 async function setupDb() {
-    const setupDB = await dbObject.createAndReturnUser({
+    const userCreds = {
+        username: "abcdefg",
+        password: "abcdefg",
+    };
+    bcrypt.genSalt(12, async function (err, salt) {
+        if (err) {
+            console.log(err);
+            return;
+        }
+        bcrypt.hash(userCreds.password, salt, async function (err, hash) {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            await dbObject.createAndReturnUser({
+                username: userCreds.username,
+                password: hash,
+            });
+        });
+    });
+
+    const setupGuest = await dbObject.createAndReturnGuest({
         sessionToken: fixtureCookie,
     });
 }
@@ -103,6 +125,32 @@ describe("POST /api/login", () => {
                 expect(response.statusCode).toEqual(400);
             });
         });
+        test("Incorrect Password returns 400", async () => {
+            const api = request(appWithOneActiveSession);
+            const payload = getParams({
+                password: "blabla",
+            });
+
+            const response = await api
+                .post(endpoint)
+                .send(payload)
+                .set("Cookie", `session=${fixtureCookie}`);
+
+            expect(response.status).toEqual(400);
+        });
+    });
+    describe("Happy Paths", () => {
+        test("expect correct credentials to work", async () => {
+            const api = request(appWithOneActiveSession);
+            const payload = getParams();
+
+            const response = await api
+                .post(endpoint)
+                .send(payload)
+                .set("Cookie", `session=${fixtureCookie}`);
+
+            expect(response.status).toEqual(200);
+        });
     });
     function getParams(overrides = {}) {
         const defaultParams = {
@@ -116,30 +164,6 @@ describe("POST /api/login", () => {
     }
 });
 
-describe("POST /api/login", () => {
-    test("expect correct credentials to work", async () => {
-        const api = request(appWithOneActiveSession);
-        const payload = getParams();
-
-        const response = await api
-            .post(endpoint)
-            .send(payload)
-            .set("Cookie", `session=${fixtureCookie}`);
-
-        expect(response.body).toStrictEqual(cartFixtures.itemOneCart);
-    });
-
-    function getParams(overrides = {}) {
-        const defaultParams = {
-            username: "abcdefg",
-            password: "abcdefg",
-        };
-
-        const params = { ...defaultParams, ...overrides };
-
-        return params;
-    }
-});
 //     });
 
 //     test("Adding duplicate item increments it in cart", async () => {
