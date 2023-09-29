@@ -122,7 +122,7 @@ describe("POST /api/register", () => {
         });
     });
     describe("Happy Paths", () => {
-        test("valid unused credentials, returns CSRF token & Status 200", async () => {
+        test("Valid and available credentials return CSRF token, status 200", async () => {
             const api = request(appWithOneActiveSession);
             const payload = getParams();
 
@@ -148,19 +148,19 @@ describe("POST /api/register", () => {
 });
 
 describe("Invalid HTTP methods to /api/register should return 404", () => {
-    test("expect GET to return 404", async () => {
+    test("GET returns 404", async () => {
         const api = request(app);
         const response = await api.get(endpoint);
 
         expect(response.statusCode).toEqual(404);
     });
-    test("expect PUT to return 404", async () => {
+    test("PUT returns 404", async () => {
         const api = request(app);
         const response = await api.put(endpoint);
 
         expect(response.statusCode).toEqual(404);
     });
-    test("expect DELETE to return 404", async () => {
+    test("DELETE returns 404", async () => {
         const api = request(app);
         const response = await api.del(endpoint);
 

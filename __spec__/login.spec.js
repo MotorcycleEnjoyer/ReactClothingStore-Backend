@@ -43,7 +43,7 @@ setupDb();
 
 describe("POST /api/login", () => {
     describe("Unhappy Paths", () => {
-        test("No credentials returns 400", async () => {
+        test("No credentials, status 400", async () => {
             const api = request(appWithOneActiveSession);
             const payload = getParams({
                 username: undefined,
@@ -57,7 +57,7 @@ describe("POST /api/login", () => {
 
             expect(response.statusCode).toEqual(400);
         });
-        test("Invalid Username returns 400", async () => {
+        test("Invalid Username, status 400", async () => {
             const api = request(appWithOneActiveSession);
             const payloads = [];
             payloads.push(
@@ -91,7 +91,7 @@ describe("POST /api/login", () => {
                 expect(response.statusCode).toEqual(400);
             });
         });
-        test("Invalid Password returns 400", async () => {
+        test("Invalid Password, status 400", async () => {
             const api = request(appWithOneActiveSession);
             const payloads = [];
             payloads.push(
@@ -125,7 +125,7 @@ describe("POST /api/login", () => {
                 expect(response.statusCode).toEqual(400);
             });
         });
-        test("Incorrect Password returns 400", async () => {
+        test("Incorrect Password, status 400", async () => {
             const api = request(appWithOneActiveSession);
             const payload = getParams({
                 password: "blabla",
@@ -140,7 +140,7 @@ describe("POST /api/login", () => {
         });
     });
     describe("Happy Paths", () => {
-        test("expect correct credentials to work", async () => {
+        test("Correct credentials return CSRF token, status 200", async () => {
             const api = request(appWithOneActiveSession);
             const payload = getParams();
 
@@ -337,19 +337,19 @@ describe("POST /api/login", () => {
 // });
 
 describe("Invalid HTTP methods to /api/suggestions should return 404", () => {
-    test("expect GET to return 404", async () => {
+    test("GET returns 404", async () => {
         const api = request(app);
         const response = await api.get(endpoint);
 
         expect(response.statusCode).toEqual(404);
     });
-    test("expect PUT to return 404", async () => {
+    test("PUT returns 404", async () => {
         const api = request(app);
         const response = await api.put(endpoint);
 
         expect(response.statusCode).toEqual(404);
     });
-    test("expect DELETE to return 404", async () => {
+    test("DELETE returns 404", async () => {
         const api = request(app);
         const response = await api.del(endpoint);
 
