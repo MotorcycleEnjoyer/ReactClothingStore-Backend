@@ -213,7 +213,7 @@ async function editCartItem (dataObject, sessionToken) {
     }
 }
 */
-async function deleteAnon(sessionToken) {
+async function deleteGuest(sessionToken) {
     if (sessionToken === null) return null;
 
     const result = await GuestModel.deleteOne({ sessionToken });
@@ -225,7 +225,7 @@ module.exports = {
     createAndReturnGuest,
     createAndReturnUser,
     getAllUsers,
-    deleteAnon,
+    deleteGuest,
     addToCart,
     deleteCartItem,
     editCartItem,
