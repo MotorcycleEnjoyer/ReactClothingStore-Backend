@@ -2,6 +2,7 @@ const express = require("express");
 const shoppingCartRouter = require("./routes/api/ShoppingCart");
 const searchRouter = require("./routes/api/Search");
 const suggestionRouter = require("./routes/api/Suggestions");
+const loginRouter = require("./routes/api/Login");
 const { suggestions } = require("./DummyProductDB");
 const path = require("path");
 
@@ -22,6 +23,8 @@ function makeApp(db, sessionsObject = {}) {
     app.use("/api/s", searchRouter({ db }));
 
     app.use("/api/suggestions", suggestionRouter({ suggestions }));
+
+    app.use("/api/login", loginRouter({ sessions, db }));
 
     app.get("/*", (req, res) => {
         res.sendFile(path.join(__dirname, "build", "index.html"));

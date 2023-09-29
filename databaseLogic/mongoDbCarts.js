@@ -10,7 +10,7 @@ async function connectToDatabase(location) {
     return true;
 }
 
-const cartSchema = new mongoose.Schema({
+const GuestCartSchema = new mongoose.Schema({
     sessionToken: {
         type: String,
         required: true,
@@ -21,9 +21,23 @@ const cartSchema = new mongoose.Schema({
     },
     shoppingCart: [],
 });
-const AnonModel = new mongoose.model("AnonCart", cartSchema);
+const GuestModel = new mongoose.model("GuestCart", GuestCartSchema);
 
-const productSchema = new mongoose.Schema({
+const UserCartSchema = new mongoose.Schema({
+    username: {
+        type: String,
+        required: true,
+    },
+    password: {
+        type: String,
+        required: true,
+    },
+    shoppingCart: [],
+    reviews: {},
+});
+const UserModel = new mongoose.model("UserCart", UserCartSchema);
+
+const ProductSchema = new mongoose.Schema({
     details: {
         id: Number,
         name: String,
@@ -42,7 +56,7 @@ const productSchema = new mongoose.Schema({
     amount: Number,
 });
 
-const ProductModel = new mongoose.model("Products", productSchema);
+const ProductModel = new mongoose.model("Products", ProductSchema);
 
 async function getAllProducts() {
     const products = await ProductModel.find();
@@ -61,20 +75,34 @@ async function createDummyDB() {
     await ProductModel.insertMany(dummyProducts);
 }
 
-async function createAndReturnUser(payload) {
+async function createAndReturnGuest(payload) {
+    // validation is done before calling this function
     const { sessionToken } = payload;
-    const person = new AnonModel({ sessionToken, loginStatus: "anon" });
+    const person = new GuestModel({ sessionToken, loginStatus: "anon" });
+    await person.save();
+    return person;
+}
+
+async function createAndReturnUser(payload) {
+    // validation is done before calling this function
+    const { username, password } = payload;
+    const person = new UserModel({ username, password });
     await person.save();
     return person;
 }
 
 async function getUser(sessionToken) {
-    const person = await AnonModel.findOne({ sessionToken });
+    if (typeof sessionToken !== "string") {
+        const { username } = sessionToken;
+        const person = await UserModel.findOne({ username });
+    } else {
+        const person = await GuestModel.findOne({ sessionToken });
+    }
     return person;
 }
 
 async function getAllUsers() {
-    const everyone = await AnonModel.find({});
+    const everyone = await GuestModel.find({});
     return everyone;
 }
 
@@ -178,12 +206,13 @@ async function editCartItem (dataObject, sessionToken) {
 async function deleteAnon(sessionToken) {
     if (sessionToken === null) return null;
 
-    const result = await AnonModel.deleteOne({ sessionToken });
+    const result = await GuestModel.deleteOne({ sessionToken });
     return result.deletedCount === 1;
 }
 
 module.exports = {
     getUser,
+    createAndReturnGuest,
     createAndReturnUser,
     getAllUsers,
     deleteAnon,
