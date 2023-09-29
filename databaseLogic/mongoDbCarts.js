@@ -108,6 +108,9 @@ async function getAllUsers() {
 
 async function addToCart(newProduct, sessionToken) {
     const user = await getUser(sessionToken);
+    if (!user) {
+        return null;
+    }
     let tempArr = user.shoppingCart;
 
     const indexOfIdenticalMatch = tempArr.findIndex((item) => {
@@ -130,6 +133,9 @@ async function addToCart(newProduct, sessionToken) {
 
 async function deleteCartItem(indexToDelete, sessionToken) {
     let user = await getUser(sessionToken);
+    if (!user) {
+        return null;
+    }
     if (indexToDelete < 0 || indexToDelete >= user.shoppingCart.length) {
         return user.shoppingCart;
     }
@@ -151,6 +157,9 @@ function areIdentical(oldData, newData) {
 
 async function editCartItem(dataObject, sessionToken) {
     let user = await getUser(sessionToken);
+    if (!user) {
+        return null;
+    }
     const { indexInCart, newAmount } = dataObject;
     if (indexInCart < 0 || indexInCart >= user.shoppingCart.length) {
         return user.shoppingCart;
