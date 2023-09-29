@@ -7,6 +7,7 @@ const app = makeApp(dbObject);
 const appWithOneActiveSession = makeApp(dbObject, sessionFixtures.oneSession);
 
 const fixtureCookie = sessionFixtures.sessionToken;
+const sessionCookie = `session=${fixtureCookie}`;
 const endpoint = "/api/register";
 
 beforeAll(connect);
@@ -34,7 +35,7 @@ describe("POST /api/register", () => {
 
             const response = await api
                 .post(endpoint)
-                .set("Cookie", `session=${fixtureCookie}`)
+                .set("Cookie", sessionCookie)
                 .send(payload);
 
             expect(response.statusCode).toEqual(400);
@@ -67,7 +68,7 @@ describe("POST /api/register", () => {
             payloads.forEach(async (payload) => {
                 const response = await api
                     .post(endpoint)
-                    .set("Cookie", `session=${fixtureCookie}`)
+                    .set("Cookie", sessionCookie)
                     .send(payload);
 
                 expect(response.statusCode).toEqual(400);
@@ -101,7 +102,7 @@ describe("POST /api/register", () => {
             payloads.forEach(async (payload) => {
                 const response = await api
                     .post(endpoint)
-                    .set("Cookie", `session=${fixtureCookie}`)
+                    .set("Cookie", sessionCookie)
                     .send(payload);
 
                 expect(response.statusCode).toEqual(400);
@@ -115,7 +116,7 @@ describe("POST /api/register", () => {
 
             const response = await api
                 .post(endpoint)
-                .set("Cookie", `session=${fixtureCookie}`)
+                .set("Cookie", sessionCookie)
                 .send(payload);
 
             expect(response.statusCode).toEqual(409);
@@ -129,7 +130,7 @@ describe("POST /api/register", () => {
             const response = await api
                 .post(endpoint)
                 .send(payload)
-                .set("Cookie", `session=${fixtureCookie}`);
+                .set("Cookie", sessionCookie);
 
             expect(response.statusCode).toEqual(200);
         });
