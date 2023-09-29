@@ -78,7 +78,7 @@ async function createDummyDB() {
 async function createAndReturnGuest(payload) {
     // validation is done before calling this function
     const { sessionToken } = payload;
-    const person = new GuestModel({ sessionToken, loginStatus: "anon" });
+    const person = new GuestModel({ sessionToken, loginStatus: "guest" });
     await person.save();
     return person;
 }
