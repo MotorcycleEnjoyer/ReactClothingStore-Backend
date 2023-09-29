@@ -1,10 +1,10 @@
 const cartFixtures = {
     intitialCart: {
-        loginStatus: "anon",
+        loginStatus: "guest",
         shoppingCart: [],
     },
     itemOneCart: {
-        loginStatus: "anon",
+        loginStatus: "guest",
         shoppingCart: [
             {
                 itemId: 1,
@@ -17,7 +17,7 @@ const cartFixtures = {
         ],
     },
     duplicateItemOneCart: {
-        loginStatus: "anon",
+        loginStatus: "guest",
         shoppingCart: [
             {
                 itemId: 1,
@@ -30,7 +30,7 @@ const cartFixtures = {
         ],
     },
     itemTwoCart: {
-        loginStatus: "anon",
+        loginStatus: "guest",
         shoppingCart: [
             {
                 itemId: 1,
@@ -51,7 +51,7 @@ const cartFixtures = {
         ],
     },
     finalCart: {
-        loginStatus: "anon",
+        loginStatus: "guest",
         shoppingCart: [
             {
                 itemId: 1,
@@ -68,7 +68,7 @@ const cartFixtures = {
 const sessionFixtures = {
     sessionToken: "0904437e-95db-4372-82ea-0310812bcf1a",
     oneSession: {
-        "0904437e-95db-4372-82ea-0310812bcf1a": { type: "anon" },
+        "0904437e-95db-4372-82ea-0310812bcf1a": { type: "guest" },
     },
 };
 
