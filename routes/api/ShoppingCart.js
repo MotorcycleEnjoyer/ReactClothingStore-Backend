@@ -12,15 +12,25 @@ const wrapper = ({ sessions, db, stockDb }) => {
             // returns sessionToken, LoginStatus, ShoppingCart
             const { sessionToken, shoppingCart, loginStatus } =
                 await makeSessionAndUser();
-            res.cookie(sessionToken, {
+            res.cookie("session", sessionToken, {
                 httpOnly: true,
                 secure: true,
                 sameSite: "lax",
             });
             return res.send({ shoppingCart, loginStatus });
         }
-        const { shoppingCart, loginStatus } = await db.getUser(sessionId);
-        res.send({ shoppingCart, loginStatus });
+        const userInfo = sessions[sessionId];
+        if (userInfo.type === "guest") {
+            const { shoppingCart, loginStatus } = await db.getUser(sessionId);
+            return res.send({ shoppingCart, loginStatus });
+        }
+        if (userInfo.type === "user") {
+            const { username } = userInfo;
+            const { shoppingCart, loginStatus } = await db.getUser({
+                username,
+            });
+            return res.send({ shoppingCart, loginStatus });
+        }
     });
 
     router.post("/", async (req, res) => {
@@ -46,7 +56,7 @@ const wrapper = ({ sessions, db, stockDb }) => {
             const person = await db.createAndReturnGuest({
                 sessionToken: cartId,
             });
-            res.cookie(cartId, {
+            res.cookie("session", cartId, {
                 httpOnly: true,
                 secure: true,
                 sameSite: "lax",
@@ -119,8 +129,6 @@ const wrapper = ({ sessions, db, stockDb }) => {
             return res.status(400).send("Invalid Index.");
         }
 
-        console.log("YES");
-
         if (indexInCart < 0 || indexInCart >= 100) {
             return res.status(400).send("Invalid index.");
         }
@@ -129,8 +137,6 @@ const wrapper = ({ sessions, db, stockDb }) => {
             indexInCart,
             sessionId
         );
-        console.log(shoppingCart);
-        console.log(loginStatus);
         res.send({ shoppingCart, loginStatus });
     });
 
