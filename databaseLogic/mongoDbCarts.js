@@ -32,6 +32,10 @@ const UserCartSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    loginStatus: {
+        type: String,
+        required: true,
+    },
     shoppingCart: [],
     reviews: {},
 });
@@ -86,7 +90,7 @@ async function createAndReturnGuest(payload) {
 async function createAndReturnUser(payload) {
     // validation is done before calling this function
     const { username, password } = payload;
-    const person = new UserModel({ username, password });
+    const person = new UserModel({ username, password, loginStatus: "user" });
     await person.save();
     return person;
 }
