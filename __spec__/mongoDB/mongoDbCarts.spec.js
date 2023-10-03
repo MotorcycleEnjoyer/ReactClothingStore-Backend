@@ -251,85 +251,88 @@ describe("User Cart Model", () => {
         );
     });
 
-    // test("Expect adding duplicate item to increment existing in cart", async () => {
-    //     const { newProduct, sessionToken } = getParams();
+    test("Expect adding duplicate item to increment existing in cart", async () => {
+        const { username } = getCreds();
+        const { newProduct } = getItem();
 
-    //     await DatabaseMethods.addToCart(newProduct, sessionToken);
-    //     const finalState = (await DatabaseMethods.getUser(sessionToken))
-    //         .shoppingCart;
+        await DatabaseMethods.addToCart(newProduct, {
+            username,
+        });
+        const { shoppingCart } = await DatabaseMethods.getUser({ username });
 
-    //     expect(finalState.length).toBe(1);
-    //     expect(finalState[0]).toEqual(
-    //         expect.objectContaining({
-    //             itemId: newProduct.itemId,
-    //             amount: 1 + newProduct.amount,
-    //             params: expect.objectContaining({
-    //                 color: "gray",
-    //                 size: "medium",
-    //             }),
-    //         })
-    //     );
-    // });
+        expect(shoppingCart.length).toBe(1);
+        expect(shoppingCart[0]).toEqual(
+            expect.objectContaining({
+                itemId: newProduct.itemId,
+                amount: 1 + newProduct.amount,
+                params: expect.objectContaining({
+                    color: "gray",
+                    size: "medium",
+                }),
+            })
+        );
+    });
 
-    // test("Expect adding separate item to push one more thing to cart", async () => {
-    //     const { newProduct, sessionToken } = getParams();
-    //     newProduct.itemId = 2;
+    test("Expect adding separate item to push one more thing to cart", async () => {
+        const { username } = getCreds();
+        const { newProduct } = getItem();
+        newProduct.itemId = 2;
 
-    //     await DatabaseMethods.addToCart(newProduct, sessionToken);
+        await DatabaseMethods.addToCart(newProduct, {
+            username,
+        });
+        const { shoppingCart } = await DatabaseMethods.getUser({ username });
 
-    //     const finalState = (await DatabaseMethods.getUser(sessionToken))
-    //         .shoppingCart;
+        expect(shoppingCart.length).toBe(2);
+        expect(shoppingCart[1]).toEqual(
+            expect.objectContaining({
+                itemId: newProduct.itemId,
+                amount: newProduct.amount,
+                params: expect.objectContaining({
+                    color: "gray",
+                    size: "medium",
+                }),
+            })
+        );
+    });
 
-    //     expect(finalState.length).toBe(2);
-    //     expect(finalState[1]).toEqual(
-    //         expect.objectContaining({
-    //             itemId: newProduct.itemId,
-    //             amount: newProduct.amount,
-    //             params: expect.objectContaining({
-    //                 color: "gray",
-    //                 size: "medium",
-    //             }),
-    //         })
-    //     );
-    // });
+    test("Expect removing item to do so, if it exists", async () => {
+        const { username } = getCreds();
+        await DatabaseMethods.deleteCartItem(0, { username });
 
-    // test("Expect adding invalid item to return nothing", async () => {
-    //     const newProduct = "blablabla";
-    // });
+        const { shoppingCart } = await DatabaseMethods.getUser({ username });
 
-    // test("Expect removing item to do so, if it exists", async () => {
-    //     await DatabaseMethods.deleteCartItem(0, sessionToken);
+        expect(shoppingCart[0]).toStrictEqual(
+            expect.objectContaining({
+                itemId: 2,
+                amount: 1,
+                params: expect.objectContaining({
+                    color: "gray",
+                    size: "medium",
+                }),
+            })
+        );
+    });
 
-    //     const cart = (await DatabaseMethods.getUser(sessionToken)).shoppingCart;
+    test("Expect removing final item, to return empty cart", async () => {
+        const { username } = getCreds();
 
-    //     expect(cart[0]).toStrictEqual(
-    //         expect.objectContaining({
-    //             itemId: 2,
-    //             amount: 1,
-    //             params: expect.objectContaining({
-    //                 color: "gray",
-    //                 size: "medium",
-    //             }),
-    //         })
-    //     );
-    // });
+        await DatabaseMethods.deleteCartItem(0, { username });
 
-    // test("Expect removing final item, to return empty cart", async () => {
-    //     await DatabaseMethods.deleteCartItem(0, sessionToken);
+        const { shoppingCart } = await DatabaseMethods.getUser({ username });
 
-    //     const cart = (await DatabaseMethods.getUser(sessionToken)).shoppingCart;
+        expect(shoppingCart[0]).toBe(undefined);
+    });
 
-    //     expect(cart[0]).toBe(undefined);
-    // });
+    test("Expect removing from empty cart, to return empty cart", async () => {
+        const { username } = getCreds();
 
-    // test("Expect removing from empty cart, to return empty cart", async () => {
-    //     const response = await DatabaseMethods.deleteCartItem(0, sessionToken);
-    //     console.log(response);
+        await DatabaseMethods.deleteCartItem(0, { username });
 
-    //     const cart = (await DatabaseMethods.getUser(sessionToken)).shoppingCart;
+        const { shoppingCart } = await DatabaseMethods.getUser({ username });
 
-    //     expect(cart[0]).toBe(undefined);
-    // });
+        expect(shoppingCart[0]).toBe(undefined);
+    });
 
     function getCreds(override = {}) {
         const defaultParams = {
