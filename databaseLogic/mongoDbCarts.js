@@ -62,6 +62,11 @@ const ProductSchema = new mongoose.Schema({
 
 const ProductModel = new mongoose.model("Products", ProductSchema);
 
+async function getAllGuests() {
+    const everyone = await GuestModel.find({});
+    return everyone;
+}
+
 async function getAllProducts() {
     const products = await ProductModel.find();
     return products;
@@ -95,6 +100,15 @@ async function createAndReturnUser(payload) {
     return person;
 }
 
+async function changePassword(payload) {
+    // validation is done before calling this function
+    const { username, password } = payload;
+    const person = await getUser({ username });
+    person.password = password;
+    await person.save();
+    return person;
+}
+
 async function getUser(sessionToken) {
     let person = null;
     if (typeof sessionToken !== "string") {
@@ -106,8 +120,15 @@ async function getUser(sessionToken) {
     return person;
 }
 
+async function deleteUser(username) {
+    if (typeof username !== "string") return null;
+
+    const result = await UserModel.deleteOne({ username });
+    return result.deletedCount === 1;
+}
+
 async function getAllUsers() {
-    const everyone = await GuestModel.find({});
+    const everyone = await UserModel.find({});
     return everyone;
 }
 
@@ -229,6 +250,9 @@ module.exports = {
     createAndReturnGuest,
     createAndReturnUser,
     getAllUsers,
+    getAllGuests,
+    changePassword,
+    deleteUser,
     deleteGuest,
     addToCart,
     deleteCartItem,
