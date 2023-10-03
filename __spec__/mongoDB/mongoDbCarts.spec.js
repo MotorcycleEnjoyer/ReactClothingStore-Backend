@@ -188,18 +188,41 @@ describe("User Cart Model", () => {
     });
 
     test("Expect getUser to return an existing User", async () => {
-        const payload = getCreds();
+        const { username, password } = getCreds();
 
         const response = await DatabaseMethods.getUser({
-            username: payload.username,
+            username,
         });
 
         expect(response).toEqual(
             expect.objectContaining({
                 __v: expect.anything(),
                 _id: expect.anything(),
-                username: payload.username,
-                password: payload.password,
+                username: username,
+                password: password,
+                loginStatus: "user",
+                shoppingCart: [],
+            })
+        );
+    });
+
+    test("Expect changing password to update existing password", async () => {
+        const { username, password } = getCreds();
+        const newPassword = "testing";
+
+        await DatabaseMethods.changePassword({
+            username,
+            password: newPassword,
+        });
+
+        const response = await DatabaseMethods.getUser({ username });
+
+        expect(response).toEqual(
+            expect.objectContaining({
+                __v: expect.anything(),
+                _id: expect.anything(),
+                username: username,
+                password: newPassword,
                 loginStatus: "user",
                 shoppingCart: [],
             })
