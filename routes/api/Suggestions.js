@@ -1,5 +1,5 @@
 const express = require("express");
-const { limitedArrayPull } = require("../../helper");
+const { limitedArrayPull } = require("../../utility/helper");
 
 const wrapper = ({ suggestions }) => {
     const router = express.Router();

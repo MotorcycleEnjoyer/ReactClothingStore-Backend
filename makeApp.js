@@ -4,7 +4,7 @@ const searchRouter = require("./routes/api/Search");
 const suggestionRouter = require("./routes/api/Suggestions");
 const loginRouter = require("./routes/api/Login");
 const registerRouter = require("./routes/api/Register");
-const { suggestions } = require("./DummyProductDB");
+const { suggestions } = require("./utility/dummyProductDb");
 const path = require("path");
 
 function makeApp(db, sessionsObject = {}) {

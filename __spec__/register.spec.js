@@ -1,6 +1,6 @@
 const request = require("supertest");
 const makeApp = require("../makeApp");
-const { cartFixtures, sessionFixtures } = require("../fixtures");
+const { cartFixtures, sessionFixtures } = require("../utility/fixtures");
 const { connect, disconnect } = require("../databaseLogic/mongoMemory");
 const dbObject = require("../databaseLogic/mongoDbCarts");
 const app = makeApp(dbObject);

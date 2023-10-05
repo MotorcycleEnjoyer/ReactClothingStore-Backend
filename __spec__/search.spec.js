@@ -4,7 +4,7 @@ const {
     cartFixtures,
     sessionFixtures,
     productFixtures,
-} = require("../fixtures");
+} = require("../utility/fixtures");
 const { connect, disconnect } = require("../databaseLogic/mongoMemory");
 const dbObject = require("../databaseLogic/mongoDbCarts");
 const app = makeApp(dbObject, {});
