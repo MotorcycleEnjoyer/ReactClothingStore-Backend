@@ -1,6 +1,6 @@
 const request = require("supertest");
 const makeApp = require("../makeApp");
-const { cartFixtures, sessionFixtures } = require("../fixtures");
+const { cartFixtures, sessionFixtures } = require("../utility/fixtures");
 const { connect, disconnect } = require("../databaseLogic/mongoMemory");
 const dbObject = require("../databaseLogic/mongoDbCarts");
 const appWithOneActiveSession = makeApp(dbObject, sessionFixtures.oneSession);
@@ -53,12 +53,10 @@ describe("GET /api/shoppingCart", () => {
         const api = request(appWithOneActiveSession);
         const response = await api.get(endpoint);
         const cookieHeader = response.headers["set-cookie"][0];
-        const validCookie = cookieHeader.split("=")[0];
-        console.log(validCookie);
+        const cookie = cookieHeader.split(";")[0];
+        console.log(cookie);
 
-        const testResponse = await api
-            .get(endpoint)
-            .set("Cookie", `session=${validCookie}`);
+        const testResponse = await api.get(endpoint).set("Cookie", cookie);
         const testCookie = testResponse.headers["set-cookie"];
 
         expect(testCookie).toBe(undefined);
